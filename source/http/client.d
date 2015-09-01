@@ -8,9 +8,17 @@ import std.concurrency;
 import core.thread;
 
 private immutable string[] METHODS_REQUIRING_BODY = ["PATCH", "PUT", "POST"];
+enum HTTPVersion{
+    HTTP_1_1 = "HTTP/1/1"
+}
+
 
 void parseHeaders(){
 
+
+}
+
+class BaseHTTPConnection{
 
 }
 

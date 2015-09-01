@@ -4,7 +4,8 @@ import std.stdio;
 import std.exception;
 import std.string;
 import std.conv;
-
+import std.algorithm;
+import std.array;
 struct URL{
 
     string scheme;
@@ -16,7 +17,56 @@ struct URL{
     string fragment;
 
 
-    this(string url ){
+    this(string url, bool allowFragments=true){
+        enforce(url.length > 0);
+        string urlTmp = url;
+
+        if(urlTmp.indexOf("://")!= -1){
+            this.scheme = url[0..url.indexOf("://")];
+            urlTmp = urlTmp[url.indexOf("//")+1 .. $];
+        }
+        else{
+            this.scheme = "";
+
+        }
+
+           writeln(this.scheme);
+           auto loc = urlTmp.indexOf("/");
+           if(loc < 0){
+            this.path = urlTmp;
+            auto seperator = urlTmp.indexOf(":");
+            if(seperator > 0){
+                this.port = to!ushort(urlTmp[seperator+1..$]);
+                this.path = urlTmp[0..seperator];
+            }
+        }
+            
+            //Check for fragments
+            if(allowFragments){
+                writeln("HELLO");
+                auto lst = splitter(urlTmp,"#").array;
+                writeln(lst);
+                urlTmp = lst[0];
+                this.fragment = lst[1];
+            }
+            //urlTmp[loc..$];
+            urlTmp = urlTmp[0..loc];
+
+            auto seperator = urlTmp.indexOf(":");
+            if(seperator > 0){
+                writeln(urlTmp);
+                //this.port = to!ushort(urlTmp[seperator+1..$]);
+                //this.path = urlTmp[0..seperator];
+            }
+
+
+
+            return;
+           
+        writeln(urlTmp);
+    }
+
+    this(string url , string x){
         enforce(url.length > 0);
 
         string urlTmp = url;
@@ -109,4 +159,19 @@ struct URL{
 
 
     }
+}
+
+
+/**
+*   Parse URL into 5 components <scheme>://<netloc>/<path>?<query>#<fragment>
+**/
+URL urlSplit(string url, string scheme = "", bool allowFragments=true){
+    URL u1 = URL(url);
+
+    return u1;
+}
+
+
+void main() {
+    writeln(URL("google.com:80/hello#index.html"));
 }
