@@ -10,10 +10,17 @@ import std.range;
 import core.thread;
 import util.connection;
 import std.format;
+import std.encode;
 
 import std.exception;
 
 class CannotSendRequestException : Exception {
+     this (string msg) {
+         super(msg) ;
+     }
+ }
+
+ class CannotSendNewHeaderException : Exception {
      this (string msg) {
          super(msg) ;
      }
@@ -63,6 +70,11 @@ private:
 
     }
 
+
+    void putHeader(string header, string[] args ...){
+        if(this.state != ConnectionState.CS_REQ_STARTED)
+            throw new CannotSendNewHeaderException("Request Started")''
+    }
 
 public:
     this(){}
@@ -120,26 +132,32 @@ public:
     /**
     *   Send request to server
     **/
-    void putRequest(string method, string url, int skip_host=0, int skipAcceptEncoding=0){
+    void putRequest(string method, string urlString, int skip_host=0, int skipAcceptEncoding=0){
+
         if (this.state == ConnectionState.CS_IDLE)
             this.state = ConnectionState.CS_REQ_STARTED;
         else
             throw new CannotSendRequestException("Test");
     
+        URL url;
         this.method = method;
-        if(url is null)
-            url = "/";
+        if(urlString is null)
+            urlString = "/";
 
-        string request = format("%s %s %s", method, url , HTTPVersion.HTTP_1_1);
+        string request = format("%s %s %s", method, urlString , HTTPVersion.HTTP_1_1);
         
         //encode ascii??
 
         if(this.defaultHTTPVersion == HTTPVersion.HTTP_1_1){
             if(! skip_host){
-                string netloc = "";
-                if(url.startsWith("http")){
+                string netloc;
+                if(urlString.startsWith("http")){
                     //get URL obj
-                    urlSplit(url, "http");
+                    url = urlSplit(urlString, "http");
+                }
+
+                if(netloc){
+                    string netloc_encoded = encode(netloc, "ASCII");
                 }
             }
         }

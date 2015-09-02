@@ -10,8 +10,9 @@ struct URL{
 
     string scheme;
     string netloc;
-    ushort port;
     string path;
+    ushort port;
+
     //string params;
     string  query;
     string fragment;
@@ -55,8 +56,8 @@ struct URL{
             auto seperator = urlTmp.indexOf(":");
             if(seperator > 0){
                 writeln(urlTmp);
-                //this.port = to!ushort(urlTmp[seperator+1..$]);
-                //this.path = urlTmp[0..seperator];
+                this.port = to!ushort(urlTmp[seperator+1..$]);
+                this.path = urlTmp[0..seperator];
             }
 
 
