@@ -10,8 +10,8 @@ import std.range;
 import core.thread;
 import util.connection;
 import std.format;
-import std.encode;
-
+import std.encoding;
+import url.parser;
 import std.exception;
 
 class CannotSendRequestException : Exception {
@@ -71,9 +71,22 @@ private:
     }
 
 
-    void putHeader(string header, string[] args ...){
+    void putHeader(string hdr, string[] values ...){
         if(this.state != ConnectionState.CS_REQ_STARTED)
-            throw new CannotSendNewHeaderException("Request Started")''
+            throw new CannotSendNewHeaderException("Request Started");
+
+        //encode and check if legal header name
+
+        string[] hdr_values;
+        foreach(i,value; values){
+            //hdr_values[i] = encode(value);
+            hdr_values[i] = value;
+        }
+
+        string header = join(hdr_values,"\r\n");
+
+
+        //_output(header);
     }
 
 public:
@@ -154,10 +167,12 @@ public:
                 if(urlString.startsWith("http")){
                     //get URL obj
                     url = urlSplit(urlString, "http");
+                    netloc = url.netloc;
                 }
 
                 if(netloc){
-                    string netloc_encoded = encode(netloc, "ASCII");
+                    string tst;
+                    //string netloc_encoded = encode(netloc, tst);
                 }
             }
         }

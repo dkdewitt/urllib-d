@@ -1,4 +1,4 @@
-module urllib.urlparser;
+module url.parser;
 
 import std.stdio;
 import std.exception;
@@ -172,7 +172,7 @@ URL urlSplit(string url, string scheme = "", bool allowFragments=true){
     return u1;
 }
 
-
+/*
 void main() {
     writeln(URL("google.com:80/hello#index.html"));
-}
+}*/
