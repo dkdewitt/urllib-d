@@ -28,7 +28,6 @@ struct URL{
         }
         else{
             this.scheme = "";
-
         }
 
            writeln(this.scheme);
@@ -64,8 +63,7 @@ struct URL{
 
             return;
            
-        writeln(urlTmp);
-    }
+        }
 
     this(string url , string x){
         enforce(url.length > 0);
@@ -172,7 +170,3 @@ URL urlSplit(string url, string scheme = "", bool allowFragments=true){
     return u1;
 }
 
-/*
-void main() {
-    writeln(URL("google.com:80/hello#index.html"));
-}*/

@@ -1,4 +1,4 @@
-
+module http.requests;
 import std.uni;
 
 private immutable string[] ENCODED_URL_METHODS = ["GET", "HEAD","DELETE", "OPTIONS"];
@@ -34,6 +34,3 @@ unittest{
 
 }
 
-void main() {
-    
-}

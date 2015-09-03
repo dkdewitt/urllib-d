@@ -1,3 +1,4 @@
+module http.client;
 import std.socket;
 import std.stdio;
 import std.algorithm;
@@ -18,12 +19,12 @@ void parseHeaders(){
 
 }
 
+//class BaseHTTPConnection{
+
+//}
+
+
 class BaseHTTPConnection{
-
-}
-
-
-class HTTPConnection{
 private:
     string host;
     ushort port;
@@ -96,10 +97,8 @@ public:
 
     void receive(){
 
- sock.listen(10);
-                char[1024] buffer;
-        
-
+            sock.listen(10);
+            char[1024] buffer;
             // the listener is ready to read
             // a new client wants to connect we accept it here
             auto newSocket = sock.accept();
@@ -112,19 +111,14 @@ public:
             newSocket.close();
            
 
-            writeln("TRUE");
-            
+    }
 
+    unittest{
+        BaseHTTPConnection h1 = new BaseHTTPConnection("www.google.com", 80);    
+        h1.connect();
+        assert(h1.sock !is null);
+
+        h1.send("Test Data".dup);
     }
 }
 
-void worker(void function())
-{
-    
-}
-void main() {
-    auto conn = new HTTPConnection("localhost",9200);
-    conn.connect();
-    conn.send("Hello".dup);
-    spawn(&worker, conn.receive);
-}

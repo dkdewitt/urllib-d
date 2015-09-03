@@ -1,3 +1,4 @@
+module http.base;
 import std.socket;
 import std.stdio;
 import std.algorithm;
@@ -10,17 +11,10 @@ import std.range;
 import core.thread;
 import util.connection;
 import std.format;
-import std.encoding;
-import url.parser;
+
 import std.exception;
 
 class CannotSendRequestException : Exception {
-     this (string msg) {
-         super(msg) ;
-     }
- }
-
- class CannotSendNewHeaderException : Exception {
      this (string msg) {
          super(msg) ;
      }
@@ -71,24 +65,6 @@ private:
     }
 
 
-    void putHeader(string hdr, string[] values ...){
-        if(this.state != ConnectionState.CS_REQ_STARTED)
-            throw new CannotSendNewHeaderException("Request Started");
-
-        //encode and check if legal header name
-
-        string[] hdr_values;
-        foreach(i,value; values){
-            //hdr_values[i] = encode(value);
-            hdr_values[i] = value;
-        }
-
-        string header = join(hdr_values,"\r\n");
-
-
-        //_output(header);
-    }
-
 public:
     this(){}
 
@@ -110,6 +86,10 @@ public:
             }
             else
                 this.port = defaultPort;
+        }
+        else{
+            this.port = to!int(port);
+            this.host = host;
         }
     }
 
@@ -145,50 +125,47 @@ public:
     /**
     *   Send request to server
     **/
-    void putRequest(string method, string urlString, int skip_host=0, int skipAcceptEncoding=0){
-
+    void putRequest(string method, string url, int skip_host=0, int skipAcceptEncoding=0){
         if (this.state == ConnectionState.CS_IDLE)
             this.state = ConnectionState.CS_REQ_STARTED;
         else
             throw new CannotSendRequestException("Test");
     
-        URL url;
         this.method = method;
-        if(urlString is null)
-            urlString = "/";
+        if(url is null)
+            url = "/";
 
-        string request = format("%s %s %s", method, urlString , HTTPVersion.HTTP_1_1);
+        string request = format("%s %s %s", method, url , HTTPVersion.HTTP_1_1);
         
         //encode ascii??
 
         if(this.defaultHTTPVersion == HTTPVersion.HTTP_1_1){
             if(! skip_host){
-                string netloc;
-                if(urlString.startsWith("http")){
+                string netloc = "";
+                if(url.startsWith("http")){
                     //get URL obj
-                    url = urlSplit(urlString, "http");
-                    netloc = url.netloc;
-                }
-
-                if(netloc){
-                    string tst;
-                    //string netloc_encoded = encode(netloc, tst);
+                   // urlSplit(url, "http");
                 }
             }
         }
     }        
 
 
+    unittest{
+        BaseHTTPConnection b1 = new BaseHTTPConnection();
+        b1.setHostPort("www.google.com", "80");
+        writeln(b1.host);
+        assert(b1.host == "www.google.com");
+    }
 }
 
 
 
-
-
+/*
 void main() {
     BaseHTTPConnection x = new BaseHTTPConnection();
     //writeln("HELLO");
-    x.setHostPort("localhost:80");
-    x.connect();
-    x.send("Test");
-}
+            urlString = "/";
+
+        string request = format("%s %s %s", method, urlString , HTTPVersion.HTTP_1_1);
+ */       
