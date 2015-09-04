@@ -10,11 +10,11 @@ struct Address{
 }
 
 
-Socket createConnection(string address, string timeout, string sourceAddress=null){
+Socket createConnection(string address, int timeout=0, string sourceAddress=null){
     return createConnection(Address(address), timeout, sourceAddress);
 }
 
-Socket createConnection(Address address, string timeout, string sourceAddress=null ){
+Socket createConnection(Address address, int timeout=0, string sourceAddress=null ){
     string host = address.host;
     ushort port = address.port;
     auto result = getAddressInfo(host, to!string(port),SocketType.STREAM);

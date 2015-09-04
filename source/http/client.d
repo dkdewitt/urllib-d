@@ -19,19 +19,20 @@ void parseHeaders(){
 
 }
 
-//class BaseHTTPConnection{
-
-//}
-
 
 class BaseHTTPConnection{
-private:
+protected:
+    string sourceAddress;
     string host;
     ushort port;
     int timeout;
-    string sourceAddress;
-    char[] _buffer;
     Socket sock;
+private:
+
+    
+    
+    char[] _buffer;
+    
     void _sendRequest(string method, string url, string requestBody, string[string] headers ){
         string[] headerKeys = headers.keys;
 

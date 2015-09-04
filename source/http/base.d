@@ -94,7 +94,7 @@ public:
     }
 
     void connect(){
-        this.sock = createConnection(this.host, "");
+        this.sock = createConnection(this.host);
     }
 
     void send(string data){

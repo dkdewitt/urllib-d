@@ -31,6 +31,8 @@ public:
 
 
 unittest{
-
+    string[string] headers;
+    headers["test"] = "test";
+   Request r1 = new Request(headers);
 }
 
