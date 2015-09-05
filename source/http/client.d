@@ -7,6 +7,9 @@ import std.conv;
 import std.array;
 import std.concurrency;
 import core.thread;
+import std.string;
+import std.range;
+import http.base;
 
 private immutable string[] METHODS_REQUIRING_BODY = ["PATCH", "PUT", "POST"];
 enum HTTPVersion{
@@ -28,11 +31,32 @@ protected:
     int timeout;
     Socket sock;
 private:
+    ConnectionState defaultState = ConnectionState.CS_IDLE;
+    ConnectionState state;
+    ushort defaultPort = 80;
+    string defaultHTTPVersion = HTTPVersion.HTTP_1_1;
 
+    char[] _response;
+
+    int debugLevel;
+    string method;
     
     
     char[] _buffer;
     
+    void output(char s){
+        _buffer ~= s;
+    }
+
+    /**
+    *   Send _buffer and optional message
+    **/
+    void sendBuffer(string message=null){
+
+    }
+
+
+
     void _sendRequest(string method, string url, string requestBody, string[string] headers ){
         string[] headerKeys = headers.keys;
 
@@ -82,6 +106,32 @@ public:
         timeout = timeout;
     }
 
+    void setHostPort(string host, string port=null){
+        if(port is null){
+            auto i = host.lastIndexOf(":");
+            auto j = host.lastIndexOf("]");
+            if(i > j){
+                try{
+                this.port  = to!ushort(host[i+1..$]);
+                } catch(ConvException exc){
+                    writefln("error message: %s", exc.msg);
+                    writefln("source file  : %s", exc.file);
+                    writefln("source line  : %s", exc.line);
+                    writeln();
+                }
+
+                this.host = host[0..i];
+            }
+            else
+                this.port = defaultPort;
+        }
+        else{
+            this.port = to!ushort(port);
+            this.host = host;
+        }
+    }
+
+
     void sendRequest(string method, string url, string requestBody, string[string] headers ){
 
     }
@@ -90,11 +140,59 @@ public:
         sock = new TcpSocket(AddressFamily.INET);
     }
 
-    void send(char[] buff){
-        char[] c  =  "GET / HTTP/1.1\r\nHost: localhost:9200\r\nConnection: keep-alive\r\nPragma: no-cache\r\nCache-Control: no-cache\r\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8\r\nUpgrade-Insecure-Requests: 1\r\nUser-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.157 Safari/537.36\r\nAccept-Encoding: gzip, deflate, sdch\r\nAccept-Language: en-US,en;q=0.8\r\n\r\n".dup;
-        sock.send(c);
+    void send(string data){
+        if (this.sock is null){
+            //raise not connected maybe auto open??
+        }
+
+        if(debugLevel>0)
+            writeln(data);
+        size_t blockSize = 8192;
+
+        while(1){
+            auto dataBlock = to!(char[])(drop(data, blockSize));
+            char[] x = to!(char[])(dataBlock);
+            //writeln();
+            if(dataBlock == null)
+                break;
+            writeln(dataBlock);
+            sock.send(cast(byte[]) dataBlock);
+            break;
+
+        }
+        return;
 
     }
+
+
+    /**
+    *   Send request to server
+    **/
+    void putRequest(string method, string url, int skip_host=0, int skipAcceptEncoding=0){
+        if (this.state == ConnectionState.CS_IDLE)
+            this.state = ConnectionState.CS_REQ_STARTED;
+        else
+            throw new CannotSendRequestException("Test");
+    
+        this.method = method;
+        if(url is null)
+            url = "/";
+
+        string request = format("%s %s %s", method, url , HTTPVersion.HTTP_1_1);
+        
+        //encode ascii??
+
+        if(this.defaultHTTPVersion == HTTPVersion.HTTP_1_1){
+            if(! skip_host){
+                string netloc = "";
+                if(url.startsWith("http")){
+                    //get URL obj
+                   // urlSplit(url, "http");
+                }
+            }
+        }
+    }        
+
 
     void receive(){
 
