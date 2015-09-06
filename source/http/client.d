@@ -9,7 +9,7 @@ import std.concurrency;
 import core.thread;
 import std.string;
 import std.range;
-import http.base;
+import http.common;
 
 private immutable string[] METHODS_REQUIRING_BODY = ["PATCH", "PUT", "POST"];
 enum HTTPVersion{
@@ -21,6 +21,9 @@ void parseHeaders(){
 
 
 }
+
+
+
 
 
 class BaseHTTPConnection{
@@ -36,7 +39,8 @@ private:
     ushort defaultPort = 80;
     string defaultHTTPVersion = HTTPVersion.HTTP_1_1;
 
-    char[] _response;
+    HTTPResponse _response;
+    //char[] _response;
 
     int debugLevel;
     string method;
@@ -132,12 +136,42 @@ public:
     }
 
 
+    //Get Host w/o port
+    @property string host(){
+        string _host = headers.get("host");
+        auto colonSep = _host.lastIndexOf(":");
+        if (colonSep)
+            return _host[0..colonSep];
+        else
+            return _host;
+    }
+
     void sendRequest(string method, string url, string requestBody, string[string] headers ){
 
     }
 
     void connect(){
         sock = new TcpSocket(AddressFamily.INET);
+    }
+
+    void close(){
+        this.state = ConnectionState.CS_IDLE;
+        try{
+            Socket sock = this.sock;
+            if(sock){
+                
+                this.sock = null;
+                sock.close();
+            }
+        }
+        finally{    
+            HTTPResponse response = this._response;
+            if(response){
+                this._response = null;
+                response.close();
+            }
+
+        }
     }
 
     void send(string data){
@@ -220,4 +254,53 @@ public:
         h1.send("Test Data".dup);
     }
 }
+
+
+class HTTPResponse{
+
+private:
+    Socket socket;
+    int debugLevel;
+    string method;
+    string url;
+
+public:
+
+    this(Socket sock, int debugLevel=0, string method, string url){
+        this.socket = sock;
+        this.debugLevel = debugLevel;
+        this.method = method;
+        this.url = url;
+    }
+
+
+    void close(){}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
