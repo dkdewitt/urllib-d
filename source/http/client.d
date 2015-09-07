@@ -11,25 +11,13 @@ import std.string;
 import std.range;
 import http.common;
 
-private immutable string[] METHODS_REQUIRING_BODY = ["PATCH", "PUT", "POST"];
-enum HTTPVersion{
-    HTTP_1_1 = "HTTP/1/1"
-}
-
-
-void parseHeaders(){
-
-
-}
-
-
 
 
 
 class BaseHTTPConnection{
 protected:
     string sourceAddress;
-    string host;
+    string _host;
     ushort port;
     int timeout;
     Socket sock;
@@ -38,17 +26,17 @@ private:
     ConnectionState state;
     ushort defaultPort = 80;
     string defaultHTTPVersion = HTTPVersion.HTTP_1_1;
-
+    string[string] _headers;
     HTTPResponse _response;
     //char[] _response;
 
     int debugLevel;
-    string method;
+    string method = "GET";
     
     
-    char[] _buffer;
+    string[] _buffer;
     
-    void output(char s){
+    void output(string s){
         _buffer ~= s;
     }
 
@@ -94,18 +82,31 @@ private:
         string header;
 
         header = name ~ " : " ~ value ~"\r\n";
-        char[] headerByte = header.dup;
+        string headerByte = header;
         //ubyte[] headerByte = cast(ubyte[]) header.dup;
 
         _buffer ~= headerByte;
 
     }   
 
+    void _outputToBuffer(string s){
+        _buffer ~= s;
+    }
+
+    void _sendOutput(){
+        auto buffer = this._buffer;
+        buffer ~= ["", ""];
+        auto message = buffer.join("\r\n");
+        this._buffer = null;
+        send(message);
+
+    }
+
     //void _
 
 public:
     this(string host, ushort port, int timeout=0, string sourceAddress=null){
-        host = host;
+        _host = host;
         port = port;
         timeout = timeout;
     }
@@ -124,21 +125,21 @@ public:
                     writeln();
                 }
 
-                this.host = host[0..i];
+                this._host = host[0..i];
             }
             else
                 this.port = defaultPort;
         }
         else{
             this.port = to!ushort(port);
-            this.host = host;
+            this._host = host;
         }
     }
 
 
     //Get Host w/o port
     @property string host(){
-        string _host = headers.get("host");
+        string _host = _headers.get("host","");
         auto colonSep = _host.lastIndexOf(":");
         if (colonSep)
             return _host[0..colonSep];
@@ -180,10 +181,11 @@ public:
         }
 
         if(debugLevel>0)
-            writeln(data);
+            writeln("send: " ~ data);
         size_t blockSize = 8192;
 
         while(1){
+            writeln(data);
             auto dataBlock = to!(char[])(drop(data, blockSize));
             char[] x = to!(char[])(dataBlock);
             //writeln();
@@ -191,7 +193,8 @@ public:
                 break;
             writeln(dataBlock);
             sock.send(cast(byte[]) dataBlock);
-            break;
+            data = data[blockSize..$];
+            //break;
 
         }
         return;
@@ -266,7 +269,7 @@ private:
 
 public:
 
-    this(Socket sock, int debugLevel=0, string method, string url){
+    this(Socket sock, string method, string url,int debugLevel=0){
         this.socket = sock;
         this.debugLevel = debugLevel;
         this.method = method;

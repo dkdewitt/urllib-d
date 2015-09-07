@@ -1,4 +1,4 @@
-module http.base;
+module http.common;
 import std.socket;
 import std.stdio;
 import std.algorithm;
@@ -20,7 +20,7 @@ class CannotSendRequestException : Exception {
      }
  }
 
-private immutable string[] METHODS_REQUIRING_BODY = ["PATCH", "PUT", "POST"];
+protected immutable string[] METHODS_REQUIRING_BODY = ["PATCH", "PUT", "POST"];
 enum HTTPVersion{
     HTTP_1_1 = "HTTP/1.1"
 }
@@ -36,3 +36,6 @@ void parseHeaders(){
 
 
 }
+
+
+

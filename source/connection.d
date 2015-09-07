@@ -7,6 +7,9 @@ import http.client;
 import std.stdio;   
 //alias _HTTPConnection = HTTPConnection;
 
+
+
+
 class HTTPConnection: BaseHTTPConnection{
 
 private:
