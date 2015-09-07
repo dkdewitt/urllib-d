@@ -93,12 +93,14 @@ private:
         _buffer ~= s;
     }
 
-    void _sendOutput(){
+    void _sendOutput(string messageBody = null){
         auto buffer = this._buffer;
         buffer ~= ["", ""];
         auto message = buffer.join("\r\n");
         this._buffer = null;
         send(message);
+        if(messageBody)
+            send(messageBody);
 
     }
 
