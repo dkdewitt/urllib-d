@@ -97,6 +97,15 @@ private:
         _buffer ~= s;
     }
 
+
+    void endHeaders(string messageBody=null){
+        if(state == ConnectionState.CS_REQ_STARTED)
+            state = ConnectionState.CS_REQ_SENT;
+        else
+            throw new CannotSendHeader("Request has not started");
+
+        _sendOutput(messageBody);
+    }
     void _sendOutput(string messageBody = null){
         auto buffer = this._buffer;
         buffer ~= ["", ""];
