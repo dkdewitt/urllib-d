@@ -163,11 +163,13 @@ public:
     }
 
     void sendRequest(string method, string url, string requestBody, string[string] headers ){
-
+        _sendRequest(method,  url,  requestBody,  headers );
     }
 
     void connect(){
         sock = new TcpSocket(AddressFamily.INET);
+        Address[] addresses = getAddress("www.google.com", 80);
+        sock.connect(addresses[0]);
         sock.setOption(SocketOptionLevel.TCP, SocketOption.TCP_NODELAY,1);
     }
 
@@ -201,7 +203,7 @@ public:
         size_t blockSize = 8192;
 
         while(1){
-            writeln(data);
+            writeln(sock.remoteAddress);
             auto dataBlock = to!(char[])(drop(data, blockSize));
             char[] x = to!(char[])(dataBlock);
             //writeln();
@@ -294,7 +296,7 @@ public:
     }
 
     unittest{
-        BaseHTTPConnection h1 = new BaseHTTPConnection("www.google.com", 80);    
+        BaseHTTPConnection h1 = new BaseHTTPConnection("localhost", 8085);    
         h1.connect();
         assert(h1.sock !is null);
 
