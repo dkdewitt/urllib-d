@@ -155,6 +155,7 @@ public:
 
     void connect(){
         sock = new TcpSocket(AddressFamily.INET);
+        sock.setOption(SocketOptionLevel.TCP, SocketOption.TCP_NODELAY,1);
     }
 
     void close(){
@@ -208,6 +209,10 @@ public:
     *   Send request to server
     **/
     void putRequest(string method, string url, int skip_host=0, int skipAcceptEncoding=0){
+        
+        if(this.response && this.response.isClosed())
+            this.response = null;
+
         if (this.state == ConnectionState.CS_IDLE)
             this.state = ConnectionState.CS_REQ_STARTED;
         else
