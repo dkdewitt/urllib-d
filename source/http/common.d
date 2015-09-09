@@ -16,9 +16,16 @@ import std.exception;
 
 class CannotSendRequestException : Exception {
      this (string msg) {
-         super(msg) ;
+         super(msg);
      }
  }
+
+
+class CannotSendHeader : Exception {
+    this(string msg){
+        super(msg);
+    }
+}
 
 protected immutable string[] METHODS_REQUIRING_BODY = ["PATCH", "PUT", "POST"];
 enum HTTPVersion{

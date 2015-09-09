@@ -10,7 +10,7 @@ import core.thread;
 import std.string;
 import std.range;
 import http.common;
-
+import url.parser;
 
 
 
@@ -79,6 +79,10 @@ private:
     }
 
     void _putHeader(string name, string value){
+
+        if(state != ConnectionState.CS_REQ_STARTED)
+            throw new CannotSendHeader("Request has not started");
+
         string header;
 
         header = name ~ " : " ~ value ~"\r\n";
@@ -210,8 +214,8 @@ public:
     **/
     void putRequest(string method, string url, int skip_host=0, int skipAcceptEncoding=0){
         
-        if(this.response && this.response.isClosed())
-            this.response = null;
+        if(this._response && this._response.isClosed())
+            this._response = null;
 
         if (this.state == ConnectionState.CS_IDLE)
             this.state = ConnectionState.CS_REQ_STARTED;
@@ -228,11 +232,35 @@ public:
 
         if(this.defaultHTTPVersion == HTTPVersion.HTTP_1_1){
             if(! skip_host){
-                string netloc = "";
+                URL netUrl;
                 if(url.startsWith("http")){
                     //get URL obj
-                   // urlSplit(url, "http");
+                    netUrl = urlSplit(url, "http");
+               }
+               if(netUrl.netloc){
+                    _putHeader("Host", netUrl.netloc);
                 }
+               else{
+                /*if tunnel hsot
+
+                */
+
+                auto host = this._host;
+                auto port = this.port;
+
+                auto hostLoc = host.lastIndexOf(":");
+                if(hostLoc >= 0){
+                    //ipv6ify host
+                }
+
+                if(port == defaultPort){
+                    _putHeader("Host", host);
+                }
+
+               
+
+               }
+                
             }
         }
     }        
@@ -285,6 +313,11 @@ public:
 
 
     void close(){}
+
+
+    bool isClosed(){
+        return false;
+    }
 }
 
 
