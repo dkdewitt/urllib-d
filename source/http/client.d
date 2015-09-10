@@ -279,7 +279,7 @@ public:
 
     void receive(){
 
-            sock.listen(10);
+            this.sock.listen(10);
             char[1024] buffer;
             // the listener is ready to read
             // a new client wants to connect we accept it here
@@ -292,6 +292,41 @@ public:
 
             newSocket.close();
            
+
+    }
+
+    HTTPResponse getResponse(){
+        HTTPResponse response;
+        if(this._response && this._response.isClosed)
+            this._response = null;
+
+        if(this.state != ConnectionState.CS_REQ_SENT || this._response)
+            throw new ResponseNotReady("Response not ready");
+
+        if(this.debugLevel>0)
+            response = null;
+        else{
+            response = new HTTPResponse(this.sock, this.method,  this.debugLevel);
+        }
+
+        try{
+            try{
+                response.begin();
+
+            } catch (Exception exc){
+                close();
+            }
+
+            this.state = ConnectionState.CS_IDLE;
+
+            if(response.willClose)
+                close();
+            else
+                this._response = response;
+            return response;
+        }catch (Exception exc){
+            throw new Exception();
+        }
 
     }
 
@@ -315,17 +350,19 @@ private:
 
 public:
 
-    this(Socket sock, string method, string url,int debugLevel=0){
+    this(Socket sock, string method,int debugLevel=0){
         this.socket = sock;
         this.debugLevel = debugLevel;
         this.method = method;
-        this.url = url;
+     
     }
 
 
     void close(){}
 
-
+    bool willClose(){
+        return false;
+    }
     bool isClosed(){
         return false;
     }
