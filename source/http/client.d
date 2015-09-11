@@ -53,6 +53,8 @@ private:
         string[] headerKeys = headers.keys;
 
         string test="";
+
+        putRequest(method, url, 0,  0);
         if( !find(headerKeys, "content-length")){
             //set content length]
             string contentLength = to!string(_setContentLength(requestBody, method));
@@ -60,8 +62,10 @@ private:
         }
 
         foreach(hdr; headers.byPair){
-
+            _putHeader(hdr[0], hdr[1]);
         }
+
+        endHeaders(requestBody);
 
 
     }
@@ -117,6 +121,8 @@ private:
 
     }
 
+
+
     //void _
 
 public:
@@ -168,8 +174,8 @@ public:
 
     void connect(){
         sock = new TcpSocket(AddressFamily.INET);
-        Address[] addresses = getAddress("www.google.com", 80);
-        sock.connect(addresses[0]);
+        Address addresses = new InternetAddress("localhost", 2525);
+        sock.connect(addresses);
         sock.setOption(SocketOptionLevel.TCP, SocketOption.TCP_NODELAY,1);
     }
 
@@ -193,16 +199,28 @@ public:
         }
     }
 
+    void request(string method, string url, string requestBody, string[string] headers = null){
+        this._sendRequest(method, url, requestBody, headers);
+    }
+        //def request(self, method, url, body=None, headers={}):
+        //"""Send a complete request to the server."""
+        //self._send_request(method, url, body, headers)
+
+
     void send(string data){
         if (this.sock is null){
             //raise not connected maybe auto open??
         }
+
+
+            writeln(this.state);
 
         if(debugLevel>0)
             writeln("send: " ~ data);
         size_t blockSize = 8192;
 
         while(1){
+            writeln(this.state);
             writeln(sock.remoteAddress);
             auto dataBlock = to!(char[])(drop(data, blockSize));
             char[] x = to!(char[])(dataBlock);
@@ -210,11 +228,16 @@ public:
             if(dataBlock == null)
                 break;
             writeln(dataBlock);
+
             sock.send(cast(byte[]) dataBlock);
             data = data[blockSize..$];
             //break;
 
+
         }
+            //not needed
+            this.state = ConnectionState.CS_REQ_SENT;
+            //
         return;
 
     }
@@ -238,7 +261,7 @@ public:
             url = "/";
 
         string request = format("%s %s %s", method, url , HTTPVersion.HTTP_1_1);
-        
+        _sendOutput();
         //encode ascii??
 
         if(this.defaultHTTPVersion == HTTPVersion.HTTP_1_1){
@@ -266,6 +289,10 @@ public:
 
                 if(port == defaultPort){
                     _putHeader("Host", host);
+                }
+                else{
+                    _putHeader("Host",  host ~ ":" ~ to!string(port)  );
+                    //self.putheader('Host', "%s:%s" % (host_enc, port)
                 }
 
                
@@ -297,9 +324,12 @@ public:
 
     HTTPResponse getResponse(){
         HTTPResponse response;
+        writeln(this.state);
         if(this._response && this._response.isClosed)
             this._response = null;
 
+        writeln("THis state");
+        writeln(this.state);
         if(this.state != ConnectionState.CS_REQ_SENT || this._response)
             throw new ResponseNotReady("Response not ready");
 
@@ -323,9 +353,10 @@ public:
                 close();
             else
                 this._response = response;
+            this._response.read();
             return response;
         }catch (Exception exc){
-            throw new Exception();
+            throw new Exception(" ");
         }
 
     }
@@ -358,6 +389,9 @@ public:
     }
 
 
+    void begin(){
+
+    }
     void close(){}
 
     bool willClose(){
@@ -365,6 +399,14 @@ public:
     }
     bool isClosed(){
         return false;
+    }
+
+    void read(){
+        char[8192] buff;
+
+            auto recd = this.socket.receive(buff);
+                writeln("Received");
+                writeln(buff[0..recd]);
     }
 }
 
