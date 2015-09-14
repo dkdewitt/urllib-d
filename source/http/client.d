@@ -83,7 +83,7 @@ private:
     }
 
     void _putHeader(string name, string value){
-
+        writeln(this.state);
         if(state != ConnectionState.CS_REQ_STARTED)
             throw new CannotSendHeader("Request has not started");
 
@@ -103,6 +103,7 @@ private:
 
 
     void endHeaders(string messageBody=null){
+        writeln("END HEADERS");
         if(state == ConnectionState.CS_REQ_STARTED)
             state = ConnectionState.CS_REQ_SENT;
         else
@@ -173,10 +174,11 @@ public:
     }
 
     void connect(){
-        sock = new TcpSocket(AddressFamily.INET);
-        Address addresses = new InternetAddress("localhost", 2525);
+        //sock = new TcpSocket(AddressFamily.INET);
+        sock = new Socket(AddressFamily.INET, SocketType.STREAM);
+        Address addresses = new InternetAddress("localhost", 2526);
         sock.connect(addresses);
-        sock.setOption(SocketOptionLevel.TCP, SocketOption.TCP_NODELAY,1);
+        //sock.setOption(SocketOptionLevel.TCP, SocketOption.TCP_NODELAY,1);
     }
 
     void close(){
@@ -234,9 +236,10 @@ public:
             //break;
 
 
+
         }
             //not needed
-            this.state = ConnectionState.CS_REQ_SENT;
+            //this.state = ConnectionState.CS_REQ_SENT;
             //
         return;
 
@@ -255,7 +258,7 @@ public:
             this.state = ConnectionState.CS_REQ_STARTED;
         else
             throw new CannotSendRequestException("Test");
-    
+        writeln(this.state);
         this.method = method;
         if(url is null)
             url = "/";
@@ -337,6 +340,7 @@ public:
             response = null;
         else{
             response = new HTTPResponse(this.sock, this.method,  this.debugLevel);
+            writeln("Got Response");
         }
 
         try{
@@ -404,9 +408,9 @@ public:
     void read(){
         char[8192] buff;
 
-            auto recd = this.socket.receive(buff);
-                writeln("Received");
-                writeln(buff[0..recd]);
+            //auto recd = this.socket.receive(buff);
+                writeln("Received", buff[0..this.socket.receive(buff)]);
+                //writeln(buff[0..recd]);
     }
 }
 
