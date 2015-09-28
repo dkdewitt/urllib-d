@@ -28,7 +28,6 @@ private:
     string defaultHTTPVersion = HTTPVersion.HTTP_1_1;
     string[string] _headers;
     HTTPResponse _response;
-    //char[] _response;
 
     int debugLevel;
     string method = "GET";
@@ -83,7 +82,6 @@ private:
     }
 
     void _putHeader(string name, string value){
-        writeln(this.state);
         if(state != ConnectionState.CS_REQ_STARTED)
             throw new CannotSendHeader("Request has not started");
 
@@ -103,7 +101,7 @@ private:
 
 
     void endHeaders(string messageBody=null){
-        writeln("END HEADERS");
+ 
         if(state == ConnectionState.CS_REQ_STARTED)
             state = ConnectionState.CS_REQ_SENT;
         else
@@ -204,45 +202,28 @@ public:
     void request(string method, string url, string requestBody, string[string] headers = null){
         this._sendRequest(method, url, requestBody, headers);
     }
-        //def request(self, method, url, body=None, headers={}):
-        //"""Send a complete request to the server."""
-        //self._send_request(method, url, body, headers)
-
 
     void send(string data){
         if (this.sock is null){
             //raise not connected maybe auto open??
         }
 
-
-            writeln(this.state);
-
         if(debugLevel>0)
             writeln("send: " ~ data);
         size_t blockSize = 8192;
 
         while(1){
-            writeln(this.state);
-            writeln(sock.remoteAddress);
             auto dataBlock = to!(char[])(drop(data, blockSize));
             char[] x = to!(char[])(dataBlock);
-            //writeln();
+         
             if(dataBlock == null)
                 break;
-            writeln(dataBlock);
 
             sock.send(cast(byte[]) dataBlock);
             data = data[blockSize..$];
-            //break;
-
-
 
         }
-            //not needed
-            //this.state = ConnectionState.CS_REQ_SENT;
-            //
         return;
-
     }
 
 
@@ -258,7 +239,6 @@ public:
             this.state = ConnectionState.CS_REQ_STARTED;
         else
             throw new CannotSendRequestException("Test");
-        writeln(this.state);
         this.method = method;
         if(url is null)
             url = "/";
@@ -314,12 +294,8 @@ public:
             // the listener is ready to read
             // a new client wants to connect we accept it here
             auto newSocket = sock.accept();
-            //char[1024] buffer;
-            writeln(newSocket);
             auto received = newSocket.receive(buffer);
-            writeln(buffer[0.. received]);
-            //Response response = test(r1);            
-
+            writeln(buffer[0.. received]);        
             newSocket.close();
            
 
@@ -327,12 +303,11 @@ public:
 
     HTTPResponse getResponse(){
         HTTPResponse response;
-        writeln(this.state);
+
         if(this._response && this._response.isClosed)
             this._response = null;
 
-        writeln("THis state");
-        writeln(this.state);
+  
         if(this.state != ConnectionState.CS_REQ_SENT || this._response)
             throw new ResponseNotReady("Response not ready");
 
@@ -340,7 +315,6 @@ public:
             response = null;
         else{
             response = new HTTPResponse(this.sock, this.method,  this.debugLevel);
-            writeln("Got Response");
         }
 
         try{
@@ -407,10 +381,7 @@ public:
 
     void read(){
         char[8192] buff;
-
-            //auto recd = this.socket.receive(buff);
-                writeln("Received", buff[0..this.socket.receive(buff)]);
-                //writeln(buff[0..recd]);
+        writeln("Received", buff[0..this.socket.receive(buff)]);       
     }
 }
 

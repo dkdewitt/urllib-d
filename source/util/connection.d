@@ -25,12 +25,8 @@ Socket createConnection(Address address, int timeout=0, string sourceAddress=nul
 
     try{
         sock = new Socket(res.family, res.type, res.protocol);
-
-
         if(sourceAddress)
             sock.bind(parseAddress(sourceAddress));
-
-        //return sock;
 
     }
     catch{}
@@ -38,9 +34,3 @@ Socket createConnection(Address address, int timeout=0, string sourceAddress=nul
     return null;
 }
 
-/*\\
-void main() {
-
-    auto x = createConnection(Address("localhost",80),"");
-    writeln(x);
-}*/

@@ -1,6 +1,7 @@
 import std.stdio;
 import std.uni;
 import http.client;
+import connection;
 void main()
 {
 	writeln("Edit source/app.d to start your project.");
