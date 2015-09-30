@@ -31,7 +31,7 @@ private:
             extraKeywords["socketOptions"] = this.socketOptions;
 
         try{
-            auto connection = createConnection(super.host, super.timeout, super.sourceAddress);
+            auto connection = createConnection(super._host, super.timeout, super.sourceAddress);
 
         } catch(Exception exc){
             writeln("Exception");

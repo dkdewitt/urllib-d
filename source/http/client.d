@@ -1,4 +1,4 @@
-module http.client;
+//module http.client;
 import std.socket;
 import std.stdio;
 import std.algorithm;
@@ -11,16 +11,17 @@ import std.string;
 import std.range;
 import http.common;
 import url.parser;
-
+import std.format;
 
 
 class BaseHTTPConnection{
 protected:
     string sourceAddress;
     string _host;
-    ushort port;
+    ushort _port;
     int timeout;
     Socket sock;
+
 private:
     ConnectionState defaultState = ConnectionState.CS_IDLE;
     ConnectionState state;
@@ -28,6 +29,7 @@ private:
     string defaultHTTPVersion = HTTPVersion.HTTP_1_1;
     string[string] _headers;
     HTTPResponse _response;
+    string ACCEPT_ENCODING = "gzip,deflate";
 
     int debugLevel;
     string method = "GET";
@@ -50,8 +52,15 @@ private:
 
     void _sendRequest(string method, string url, string requestBody, string[string] headers ){
         string[] headerKeys = headers.keys;
+        writeln("Request");
+        //string request="";
 
-        string test="";
+        string request = format("%s %s %s", method, url, "HTTP/1.1");
+
+        output(request);
+        string[string] skips;
+        if("host" in headers)
+            skips["host"] = "1";
 
         putRequest(method, url, 0,  0);
         if( !find(headerKeys, "content-length")){
@@ -61,9 +70,10 @@ private:
         }
 
         foreach(hdr; headers.byPair){
+            writeln(hdr);
             _putHeader(hdr[0], hdr[1]);
         }
-
+        output("\r\n");
         endHeaders(requestBody);
 
 
@@ -110,25 +120,18 @@ private:
         _sendOutput(messageBody);
     }
     void _sendOutput(string messageBody = null){
+
         auto buffer = this._buffer;
-        buffer ~= ["", ""];
+        buffer ~= [""];
         auto message = buffer.join("\r\n");
         this._buffer = null;
+
         send(message);
-        if(messageBody)
-            send(messageBody);
-
-    }
-
-
-
-    //void _
-
-public:
-    this(string host, ushort port, int timeout=0, string sourceAddress=null){
-        _host = host;
-        port = port;
-        timeout = timeout;
+        if(messageBody){
+            message = ["", messageBody].join("\r\n");
+            
+            send(message);
+        }
     }
 
     void setHostPort(string host, string port=null){
@@ -137,7 +140,7 @@ public:
             auto j = host.lastIndexOf("]");
             if(i > j){
                 try{
-                this.port  = to!ushort(host[i+1..$]);
+                this._port  = to!ushort(host[i+1..$]);
                 } catch(ConvException exc){
                     writefln("error message: %s", exc.msg);
                     writefln("source file  : %s", exc.file);
@@ -148,23 +151,31 @@ public:
                 this._host = host[0..i];
             }
             else
-                this.port = defaultPort;
+                this._port = defaultPort;
         }
         else{
-            this.port = to!ushort(port);
+            this._port = to!ushort(port);
             this._host = host;
         }
     }
 
 
+public:
+
+    this(string host, ushort port, int timeout=0, string sourceAddress=null){
+        this._host = host;
+        this._port = port;
+        this.timeout = timeout;
+    }
+
     //Get Host w/o port
     @property string host(){
-        string _host = _headers.get("host","");
-        auto colonSep = _host.lastIndexOf(":");
+        string host = _headers.get("host","");
+        auto colonSep = host.lastIndexOf(":");
         if (colonSep)
-            return _host[0..colonSep];
+            return host[0..colonSep];
         else
-            return _host;
+            return host;
     }
 
     void sendRequest(string method, string url, string requestBody, string[string] headers ){
@@ -172,11 +183,9 @@ public:
     }
 
     void connect(){
-        //sock = new TcpSocket(AddressFamily.INET);
         sock = new Socket(AddressFamily.INET, SocketType.STREAM);
-        Address addresses = new InternetAddress("localhost", 2526);
+        Address addresses = new InternetAddress("localhost", 5000);
         sock.connect(addresses);
-        //sock.setOption(SocketOptionLevel.TCP, SocketOption.TCP_NODELAY,1);
     }
 
     void close(){
@@ -199,7 +208,9 @@ public:
         }
     }
 
-    void request(string method, string url, string requestBody, string[string] headers = null){
+
+    void request(string method, string url, string requestBody=null, string[string] headers = null){
+        
         this._sendRequest(method, url, requestBody, headers);
     }
 
@@ -211,18 +222,32 @@ public:
         if(debugLevel>0)
             writeln("send: " ~ data);
         size_t blockSize = 8192;
-
+        writeln("Begin data");
+        writeln(data);
+        writeln("End data");
         while(1){
-            auto dataBlock = to!(char[])(drop(data, blockSize));
-            char[] x = to!(char[])(dataBlock);
-         
-            if(dataBlock == null)
-                break;
+            auto dataBlocks = chunks(data, blockSize);
 
-            sock.send(cast(byte[]) dataBlock);
-            data = data[blockSize..$];
+            writeln("Begin dataBlock");
+        writeln(dataBlocks);
+        writeln("End dataBLoc");
+        //this.sock.send("GET /api/groups/ HTTP/1.1\r\n\r\n");
+                    foreach(chunk; dataBlocks){
 
+                this.sock.send(to!(char[])(chunk));
+                //this.sock.send("\r\n");
+            }
+
+            
+            break;
+            
         }
+        char[1023] b;
+
+        auto got = this.sock.receive(b);
+        writeln(b[0..got]);
+
+
         return;
     }
 
@@ -230,7 +255,7 @@ public:
     /**
     *   Send request to server
     **/
-    void putRequest(string method, string url, int skip_host=0, int skipAcceptEncoding=0){
+    void putRequest(string method, string url, int skiphost=0, int skipAcceptEncoding=0){
         
         if(this._response && this._response.isClosed())
             this._response = null;
@@ -248,7 +273,7 @@ public:
         //encode ascii??
 
         if(this.defaultHTTPVersion == HTTPVersion.HTTP_1_1){
-            if(! skip_host){
+            if(! skiphost){
                 URL netUrl;
                 if(url.startsWith("http")){
                     //get URL obj
@@ -263,7 +288,7 @@ public:
                 */
 
                 auto host = this._host;
-                auto port = this.port;
+                auto port = this._port;
 
                 auto hostLoc = host.lastIndexOf(":");
                 if(hostLoc >= 0){
@@ -275,7 +300,6 @@ public:
                 }
                 else{
                     _putHeader("Host",  host ~ ":" ~ to!string(port)  );
-                    //self.putheader('Host', "%s:%s" % (host_enc, port)
                 }
 
                
@@ -295,7 +319,7 @@ public:
             // a new client wants to connect we accept it here
             auto newSocket = sock.accept();
             auto received = newSocket.receive(buffer);
-            writeln(buffer[0.. received]);        
+               
             newSocket.close();
            
 
@@ -363,6 +387,7 @@ public:
         this.socket = sock;
         this.debugLevel = debugLevel;
         this.method = method;
+        this.socket.blocking = 1;
      
     }
 
@@ -381,7 +406,8 @@ public:
 
     void read(){
         char[8192] buff;
-        writeln("Received", buff[0..this.socket.receive(buff)]);       
+        //writeln(this.socket.receive(buff));
+        //writeln("Received", buff[0..this.socket.receive(buff)]);       
     }
 }
 
