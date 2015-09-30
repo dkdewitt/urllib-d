@@ -12,6 +12,7 @@ import std.array;
 import std.concurrency;
 import std.range;
 import std.string;
+import url.parser;
 
 class BaseHTTPConnection {
 
@@ -32,6 +33,8 @@ private:
     //HTTPResponse _response;
     string[] _buffer;
     HTTPResponse _response;
+    string method;
+
     void output(string s){
         _buffer ~= s;
     }
@@ -44,9 +47,10 @@ private:
         if("host" in headers){
             skips["host"] = "1";
         }
-
+        putRequest(method, url, 0,  0);
         if(!("content-length" in headers))
-             headers["content-length"] = to!string(setContentLength(requestBody, method));
+            if(requestBody){}
+                //headers["content-length"] = to!string(setContentLength(requestBody, method));
 
 
         foreach(hdr; headers.byPair){
@@ -72,7 +76,7 @@ private:
         if(state != ConnectionState.CS_REQ_STARTED)
             throw new CannotSendHeader("Request has not started");
 
-        string header = name ~ " : " ~ value ~"\r\n";
+        string header = name ~ " : " ~ value;
         output(header);
 
     }
@@ -90,6 +94,8 @@ private:
         auto buffer = this._buffer;
         buffer ~= [""];
         auto message = buffer.join("\r\n");
+        writeln("data");
+        writeln(message);
         send(message);
         this._buffer = null;
 
@@ -134,11 +140,71 @@ private:
         if(debugLevel > 0)
             writeln("Send: " ~ data);
         size_t chuckSize = 8192;
-
+        
+        //writeln(data);
         foreach(chunk; chunks(data, chuckSize)){
+            //writeln(chunk);
             this.sock.send(to!(char[])(chunk));
         }
+        this.sock.send("\r\n");
+
     }
+
+
+    /**
+    *   Send request to server
+    **/
+    void putRequest(string method, string url, int skiphost=0, int skipAcceptEncoding=0){
+        
+        if(this._response && this._response.isClosed())
+            this._response = null;
+
+        if (this.state == ConnectionState.CS_IDLE)
+            this.state = ConnectionState.CS_REQ_STARTED;
+        else
+            throw new CannotSendRequestException("Test");
+        this.method = method;
+        if(url is null)
+            url = "/";
+
+        string request = format("%s %s %s", method, url , HTTPVersion.HTTP_1_1);
+        //sendOutput();
+        //encode ascii??
+
+        if(this.defaultHTTPVersion == HTTPVersion.HTTP_1_1){
+            if(! skiphost){
+                URL netUrl;
+                if(url.startsWith("http")){
+                    //get URL obj
+                    netUrl = urlSplit(url, "http");
+               }
+               if(netUrl.netloc){
+                    putHeader("Host", netUrl.netloc);
+                }
+               else{
+                /*if tunnel hsot
+
+                */
+                auto host = this._host;
+                auto port = this._port;
+
+                auto hostLoc = host.lastIndexOf(":");
+                if(hostLoc >= 0){
+                    //ipv6ify host
+                }
+
+                if(port == defaultPort){
+                    putHeader("Host", host);
+                }
+                else{
+                    putHeader("Host",  host ~ ":" ~ to!string(port)  );
+                }
+               }
+                
+            }
+        }
+    }        
+
 
 
 public:
@@ -151,7 +217,7 @@ public:
 
     void connect(){
         sock = new Socket(AddressFamily.INET, SocketType.STREAM);
-        Address addresses = new InternetAddress("localhost", 5000);
+        Address addresses = new InternetAddress(this._host, this._port);
         sock.connect(addresses);
     }
 
@@ -175,19 +241,90 @@ public:
         }
     }
 
+
     void request(string method, string url, string requestBody=null, string[string] headers = null){
-        
         this.sendRequest(method, url, requestBody, headers);
     }
+
+    HTTPResponse getResponse(){
+        HTTPResponse response;
+
+        if(this._response && this._response.isClosed)
+            this._response = null;
+
+  
+        if(this.state != ConnectionState.CS_REQ_SENT || this._response)
+            throw new ResponseNotReady("Response not ready");
+
+        if(this.debugLevel>0)
+            response = null;
+        else{
+            response = new HTTPResponse(this.sock, this.method,  this.debugLevel);
+        }
+
+        try{
+            try{
+                response.begin();
+
+            } catch (Exception exc){
+                close();
+            }
+
+            this.state = ConnectionState.CS_IDLE;
+
+            if(response.willClose)
+                close();
+            else
+                this._response = response;
+            this._response.read();
+            return response;
+        }catch (Exception exc){
+            throw new Exception(" ");
+        }
+
+    }
+
+
 }
 
 
 class HTTPResponse{
 
+private:
+    Socket socket;
+    int debugLevel;
+    string method;
+    string url;
 
-    void close(){
-        
+public:
+
+    this(Socket sock, string method,int debugLevel=0){
+        this.socket = sock;
+        this.debugLevel = debugLevel;
+        this.method = method;
+        this.socket.blocking = 1;
+     
+    }
+
+
+    void begin(){
+
+    }
+    void close(){}
+
+    bool willClose(){
+        return false;
+    }
+    bool isClosed(){
+        return false;
+    }
+
+    void read(){
+        char[8192] buff;
+        //writeln(this.socket.receive(buff));
+        writeln(buff[0..this.socket.receive(buff)]);       
     }
 }
+
 
 
