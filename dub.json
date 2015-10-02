@@ -4,5 +4,6 @@
 	"copyright": "Copyright © 2015, daviddewitt",
 	"authors": ["daviddewitt"],
 	"dependencies": {
-	}
+	},
+    "libs": ["curl"]
 }

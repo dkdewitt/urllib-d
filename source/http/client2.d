@@ -34,7 +34,7 @@ private:
     string[] _buffer;
     HTTPResponse _response;
     string method;
-
+    URL url;
     void output(string s){
         _buffer ~= s;
     }
@@ -213,6 +213,7 @@ public:
         this._host = host;
         this._port = port;
         this.timeout = timeout;
+        this.url = URL(host);
     }
 
     void connect(){

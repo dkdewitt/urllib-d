@@ -13,10 +13,12 @@ struct URL{
     string path;
     ushort port;
 
-    //string params;
+
     string  query;
     string fragment;
 
+
+    
 
     this(string url, bool allowFragments=true){
         enforce(url.length > 0);
@@ -24,7 +26,8 @@ struct URL{
 
         if(urlTmp.indexOf("://")!= -1){
             this.scheme = url[0..url.indexOf("://")];
-            urlTmp = urlTmp[url.indexOf("//")+1 .. $];
+            urlTmp = urlTmp[url.indexOf("//")+2 .. $];
+            writeln(urlTmp);
         }
         else{
             this.scheme = "";
@@ -43,14 +46,12 @@ struct URL{
             
             //Check for fragments
             if(allowFragments){
-                writeln("HELLO");
                 auto lst = splitter(urlTmp,"#").array;
                 writeln(lst);
                 urlTmp = lst[0];
-                this.fragment = lst[1];
+                if(lst.length > 1)
+                    this.fragment = lst[1];
             }
-            //urlTmp[loc..$];
-            urlTmp = urlTmp[0..loc];
 
             auto seperator = urlTmp.indexOf(":");
             if(seperator > 0){
