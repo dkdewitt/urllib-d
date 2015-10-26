@@ -291,7 +291,11 @@ public:
                 close();
             else
                 this._response = response;
-            this._response.read();
+            auto data = this._response.read();
+            writeln(data);
+            foreach(d; data.data){
+                writeln(d);
+            }
             return response;
         }catch (Exception exc){
             throw new Exception(" ");
@@ -349,43 +353,47 @@ public:
         return false;
     }
 
-    void read(){
+    Data read(){
         char[8192] buff;
 
+        Data data;
 
 
         while(true){
             
             auto sx = this.socket.receive(buff);
-            //writeln(sx);
-            if(sx == 0)
-                this.socket.close();
-                //return;
-            if(sx > 0){
-                data ~= buff[0..sx];
-                writeln(data);
+            ///writeln(sx);
+            if(sx == -1){
+                //break;
+                //this.socket.close();
+                //return data;
+                break;
+            }
 
+            if(sx > 0){
+                data.data ~= buff[0..sx];
+                data.size += sx;
+                writeln(data);
                 //return;
             }
-            else{
-                
-                return;
-            }
+            
         }
+        //writeln(data.data);
+        return data;
     }
 }
 
 
 
 struct Data{
-    char[8192] buff;
+    char[] data;
     long size;
     long i;
 
-    this(long i, char[] buff){
-        write(buff);
+    this(long i, char[] data){
+        write(data);
         size = i;
-        buff = buff;
+        data = data;
     }
     @property bool empty()
     {
@@ -394,7 +402,7 @@ struct Data{
 
     @property char front()
     {
-        return buff[i];
+        return data[i];
     }
 
     void popFront()
