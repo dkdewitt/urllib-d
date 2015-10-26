@@ -21,8 +21,6 @@ Socket createConnection(Address address, int timeout=0, string sourceAddress=nul
     foreach(res; result){
     writeln(res);
     Socket sock;
-
-
     try{
         sock = new Socket(res.family, res.type, res.protocol);
         if(sourceAddress)

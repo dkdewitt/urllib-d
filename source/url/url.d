@@ -1,4 +1,4 @@
-module url.parser;
+module url.url;
 
 import std.stdio;
 import std.exception;
@@ -68,7 +68,4 @@ public:
 
 }
 
-    void main() {
-        
-        auto URL = URL("http://www.google.com/index");
-    }
+   

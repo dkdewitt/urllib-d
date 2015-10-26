@@ -30,13 +30,29 @@ private:
     ConnectionState state;
     ushort defaultPort = 80;
     string defaultHTTPVersion = HTTPVersion.HTTP_1_1;
-    //HTTPResponse _response;
     string[] _buffer;
     HTTPResponse _response;
     string method;
     URL url;
+
+
     void output(string s){
         _buffer ~= s;
+    }
+
+
+    //Send output and clear buffer
+    void sendOutput(string messageBody = null){
+        auto buffer = this._buffer;
+        buffer ~= [""];
+        auto message = buffer.join("\r\n");
+        send(message);
+        this._buffer = null;
+
+        if(messageBody){
+            message = ["", messageBody].join("\r\n");
+            send(message);
+        }
     }
 
     void sendRequest(string method, string url, string requestBody, string[string] headers ){
@@ -76,7 +92,7 @@ private:
         if(state != ConnectionState.CS_REQ_STARTED)
             throw new CannotSendHeader("Request has not started");
 
-        string header = name ~ " : " ~ value;
+        string header = name ~ ": " ~ value;
         output(header);
 
     }
@@ -90,20 +106,7 @@ private:
         sendOutput( messageBody);
     }
 
-    void sendOutput(string messageBody = null){
-        auto buffer = this._buffer;
-        buffer ~= [""];
-        auto message = buffer.join("\r\n");
-        writeln("data");
-        writeln(message);
-        send(message);
-        this._buffer = null;
 
-        if(messageBody){
-            message = ["", messageBody].join("\r\n");
-            send(message);
-        }
-    }
 
     void setHostPort(string host, string port = null){
         if(port is null){
@@ -134,19 +137,21 @@ private:
 
     void send(string data){
         if(this.sock is null){
-            //raise not connected
+            //if (autoOpen)
+                //connect();
+            throw new NotConnected("Client is currently not connected2");
         }
 
         if(debugLevel > 0)
             writeln("Send: " ~ data);
         size_t chuckSize = 8192;
         
-        //writeln(data);
+        writeln(data);
         foreach(chunk; chunks(data, chuckSize)){
-            //writeln(chunk);
+            writeln(chunk);
             this.sock.send(to!(char[])(chunk));
         }
-        this.sock.send("\r\n");
+        //this.sock.send("\r\n");
 
     }
 
@@ -178,8 +183,8 @@ private:
                     //get URL obj
                     netUrl = urlSplit(url, "http");
                }
-               if(netUrl.netloc){
-                    putHeader("Host", netUrl.netloc);
+               if(netUrl.host){
+                    putHeader("Host", netUrl.host);
                 }
                else{
                 /*if tunnel hsot
@@ -214,12 +219,21 @@ public:
         this._port = port;
         this.timeout = timeout;
         this.url = URL(host);
+
+        //switch to setHostPort
     }
 
     void connect(){
         sock = new Socket(AddressFamily.INET, SocketType.STREAM);
+
+
+        // TODO change thid
+        this.sock.setOption(SocketOptionLevel.SOCKET,
+        SocketOption.RCVTIMEO, dur!"msecs"(100));
+
         Address addresses = new InternetAddress(this._host, this._port);
-        sock.connect(addresses);
+        writeln(addresses);
+        this.sock.connect(addresses);
     }
 
     void close(){
@@ -296,6 +310,12 @@ private:
     int debugLevel;
     string method;
     string url;
+    char[] data;
+    string[string] headers;
+
+    void readStatus(){
+
+    }
 
 public:
 
@@ -303,12 +323,21 @@ public:
         this.socket = sock;
         this.debugLevel = debugLevel;
         this.method = method;
-        this.socket.blocking = 1;
+        //this.socket.blocking = 1;
+
      
     }
 
 
     void begin(){
+        
+        if(this.headers)
+            return;
+
+        //Read until 
+        //while(true){
+
+        //}
 
     }
     void close(){}
@@ -322,10 +351,56 @@ public:
 
     void read(){
         char[8192] buff;
-        //writeln(this.socket.receive(buff));
-        writeln(buff[0..this.socket.receive(buff)]);       
+
+
+
+        while(true){
+            
+            auto sx = this.socket.receive(buff);
+            //writeln(sx);
+            if(sx == 0)
+                this.socket.close();
+                //return;
+            if(sx > 0){
+                data ~= buff[0..sx];
+                writeln(data);
+
+                //return;
+            }
+            else{
+                
+                return;
+            }
+        }
     }
 }
 
+
+
+struct Data{
+    char[8192] buff;
+    long size;
+    long i;
+
+    this(long i, char[] buff){
+        write(buff);
+        size = i;
+        buff = buff;
+    }
+    @property bool empty()
+    {
+        return i == size;
+    }
+
+    @property char front()
+    {
+        return buff[i];
+    }
+
+    void popFront()
+    {
+        ++i;
+    }
+}
 
 

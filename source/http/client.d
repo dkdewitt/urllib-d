@@ -279,8 +279,8 @@ public:
                     //get URL obj
                     netUrl = urlSplit(url, "http");
                }
-               if(netUrl.netloc){
-                    _putHeader("Host", netUrl.netloc);
+               if(netUrl.host){
+                    _putHeader("Host", netUrl.host);
                 }
                else{
                 /*if tunnel hsot

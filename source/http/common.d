@@ -33,8 +33,16 @@ class ResponseNotReady : Exception {
     }
 }
 
+class NotConnected : Exception {
+    this(string msg){
+        super(msg);
+    }
+}
+
 
 protected immutable string[] METHODS_REQUIRING_BODY = ["PATCH", "PUT", "POST"];
+protected immutable string[] ENCODE_URL_METHODS = ["DELETE", "GET", "HEAD", "OPTION"];
+
 enum HTTPVersion{
     HTTP_1_1 = "HTTP/1.1"
 }
@@ -46,7 +54,15 @@ enum ConnectionState{
     CS_REQ_SENT = "Request-sent"
 }
 
+enum DefaultPorts{
+    HTTP = 80,
+    HTTPS = 443
+}
+
+
 void parseHeaders(){
+
+    string[string] headers;
 
 
 }

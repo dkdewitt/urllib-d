@@ -9,10 +9,10 @@ import std.array;
 struct URL{
 
     string scheme;
-    string netloc;
-    string path;
+    string host;
+    
     ushort port;
-
+    string path;
 
     string  query;
     string fragment;
@@ -20,7 +20,7 @@ struct URL{
 
     
 
-    this(string url, bool allowFragments=true){
+    /*this(string url, bool allowFragments=true){
         enforce(url.length > 0);
         string urlTmp = url;
 
@@ -64,21 +64,20 @@ struct URL{
 
             return;
            
-        }
+        }*/
 
-    this(string url , string x){
+    this(string url , bool allowFragments=true){
         enforce(url.length > 0);
 
         string urlTmp = url;
         
-
         if ( urlTmp.indexOf("://") != -1){
             long loc = urlTmp.indexOf("://");
             string scheme = urlTmp[0..loc];
             //writeln(urlTmp[loc]);
             urlTmp = urlTmp[loc+1..$];
             this.scheme = scheme;
-            writeln(this.scheme);
+            //writeln(this.scheme);
             switch (scheme){
                 case "http":
                 case "ftp" : 
@@ -87,22 +86,23 @@ struct URL{
                     urlTmp = urlTmp[2..$];
                     goto default;
                 default:
-                    writeln(urlTmp);
-                    //Get next slash
-                    long netlocBeg = 0;
-                    long netlocEnd = urlTmp.indexOf("/");
-
-                    if (netlocEnd == -1)
-                        //Fix this
-                        break;
-
-                    string hostTmp = urlTmp[0..netlocEnd];
+                    long hostBeg = 0;
+                    long hostEnd = urlTmp.indexOf("/");
+                    string hostTmp;
+                    if (hostEnd == -1){
+                        hostEnd = urlTmp.length;
+                        hostTmp = urlTmp;
+                    }
+                    else
+                        hostTmp = urlTmp[0..hostEnd];
                     //Check if credentials are passed in
-
+                    writeln(urlTmp);
                     auto userpassLoc = hostTmp.indexOf("@");
-                    netlocBeg = userpassLoc+1;
+                    hostBeg = userpassLoc+1;
+                    writeln(hostBeg);
                     if(userpassLoc > 0){
                         //Seperate Out for user and pass
+
                         auto credentials = hostTmp[0..userpassLoc];
                         auto seperator = credentials.indexOf(":");
                         auto username = credentials[0..seperator];
@@ -111,33 +111,32 @@ struct URL{
                         enforce(username.length > 0, "Cannot have empty username");
 
                     }
-                    this.netloc  = urlTmp[netlocBeg..netlocEnd];
-                    auto portTmpLoc = this.netloc.indexOf(":");
+                    this.host  = urlTmp[hostBeg..hostEnd];
+                    auto portTmpLoc = this.host.indexOf(":");
 
                     if(portTmpLoc > 0){
-                        enforce(portTmpLoc < this.netloc.length -1, "Invalid Port");
+                        enforce(portTmpLoc < this.host.length -1, "Invalid Port");
                     
-                    this.port = to!ushort(this.netloc[portTmpLoc+1..$]);
-                    this.netloc = this.netloc[0 .. portTmpLoc];
+                    this.port = to!ushort(this.host[portTmpLoc+1..$]);
+                    this.host = this.host[0 .. portTmpLoc];
                 }
-                urlTmp = urlTmp[netlocEnd..$]; 
+
+                urlTmp = urlTmp[hostEnd..$]; 
                 auto sep = urlTmp.indexOf("?");
                 long tmpFrag;
+                tmpFrag = urlTmp.indexOf("#");
+                if (tmpFrag > 0){
+
+                    this.fragment= urlTmp[tmpFrag..$];
+                    urlTmp = urlTmp[0..tmpFrag];    
+                    }
                 if(sep > 0){
-                    tmpFrag = urlTmp.indexOf("#");
- 
-                    this.path = urlTmp[0..sep];
-
-
-                    tmpFrag = urlTmp.indexOf("#");
+            
                     if(tmpFrag > 0)
                         this.query = urlTmp[sep+1..tmpFrag];
-                        //this.fragment = urlTmp[tmpFrag+1..$];
                     else
                         this.query = urlTmp[sep+1..$]; 
-
-
-                    //this.path = path;
+                    this.path = urlTmp[0..sep];
 
                 }
 
@@ -151,8 +150,7 @@ struct URL{
                     }
 
                 }
-                    if(tmpFrag > 0)
-                       this.fragment=urlTmp[tmpFrag+1..$];
+
 
             }
         }
@@ -163,7 +161,7 @@ struct URL{
 
 
 /**
-*   Parse URL into 5 components <scheme>://<netloc>/<path>?<query>#<fragment>
+*   Parse URL into 5 components <scheme>://<host>/<path>?<query>#<fragment>
 **/
 URL urlSplit(string url, string scheme = "", bool allowFragments=true){
     URL u1 = URL(url);
