@@ -45,7 +45,9 @@ protected immutable string[] METHODS_REQUIRING_BODY = ["PATCH", "PUT", "POST"];
 protected immutable string[] ENCODE_URL_METHODS = ["DELETE", "GET", "HEAD", "OPTION"];
 
 enum HTTPVersion{
-    HTTP_1_1 = "HTTP/1.1"
+    HTTP_1_1 = "HTTP/1.1",
+    HTTP_1_0 = "HTTP/1.0"
+    
 }
 
 
@@ -60,11 +62,50 @@ enum DefaultPorts{
     HTTPS = 443
 }
 
+enum HTTPMethod {
+    GET,
+    HEAD,
+    PUT,
+    POST,
+    PATCH,
+    DELETE,
+    OPTIONS,
+    TRACE,
+    CONNECT,
+}
 
-void parseHeaders(){
+HTTPMethod httpMethodFromString(string str)
+{
+    switch(str){
+        default: throw new Exception("Invalid HTTP method: "~str);
+        // HTTP standard, RFC 2616
+        case "GET": return HTTPMethod.GET;
+        case "HEAD": return HTTPMethod.HEAD;
+        case "PUT": return HTTPMethod.PUT;
+        case "POST": return HTTPMethod.POST;
+        case "PATCH": return HTTPMethod.PATCH;
+        case "DELETE": return HTTPMethod.DELETE;
+        case "OPTIONS": return HTTPMethod.OPTIONS;
+        case "TRACE": return HTTPMethod.TRACE;
+        case "CONNECT": return HTTPMethod.CONNECT;
+}}
 
-    string[string] headers;
+void parseHeaders(string input, ref Headers requestHeaders){
+        auto y = splitter(input, "\r\n");
+        writeln(y);
+        string [] requestLine = y.takeOne()[0].split(" ");
+        foreach (lineNum, line; y.dropOne().enumerate(1)){
+            if(line.length<1){
+                continue;
+            }
+           
+            auto sepPosition = line.indexOf(":");
+            //enforce(sepPosition > 0 && sepPosition < line.length-1, "Invalid Header");
+            
 
+            //requestHeaders.insert([line[0..sepPosition]], line[sepPosition+1..$]);
+        }
+        writeln(requestHeaders);
 
 }
 

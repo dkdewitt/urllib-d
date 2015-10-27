@@ -146,7 +146,7 @@ private:
             writeln("Send: " ~ data);
         size_t chuckSize = 8192;
         
-        writeln(data);
+        //writeln(data);
         foreach(chunk; chunks(data, chuckSize)){
             writeln(chunk);
             this.sock.send(to!(char[])(chunk));
@@ -229,7 +229,7 @@ public:
 
         // TODO change thid
         this.sock.setOption(SocketOptionLevel.SOCKET,
-        SocketOption.RCVTIMEO, dur!"msecs"(100));
+        SocketOption.RCVTIMEO, dur!"msecs"(200));
 
         Address addresses = new InternetAddress(this._host, this._port);
         writeln(addresses);
@@ -279,9 +279,12 @@ public:
 
         try{
             try{
+                //msleep(100);
                 response.begin();
 
+
             } catch (Exception exc){
+                writeln("CLOSED");
                 close();
             }
 
@@ -289,14 +292,17 @@ public:
 
             if(response.willClose)
                 close();
-            else
+            else{
+
                 this._response = response;
-            auto data = this._response.read();
-            data.getHeaders();
-            foreach(d; data.data){
-                //write(d);
+                this._response.read();
             }
-            return response;
+            //auto data = this._response.read();
+            //data.getHeaders();
+            //foreach(d; data.data){
+                //write(d);
+            //}
+            return this._response;
         }catch (Exception exc){
             throw new Exception(" ");
         }
@@ -314,9 +320,11 @@ private:
     int debugLevel;
     string method;
     string url;
-    char[] data;
+    Data data;
     string[string] headers;
-
+    string httpVersion;
+    string status;
+    string reason;
     void readStatus(){
 
     }
@@ -334,15 +342,41 @@ public:
 
 
     void begin(){
+        char[8192] buff;
+
+        Data data;
+
+
+        while(true){
+            
+            auto sx = this.socket.receive(buff);
+
+            if(sx == -1){
+                //break;
+                //this.socket.close();
+                //return data;
+                break;
+            }
+
+            if(sx > 0){
+                data.data ~= buff[0..sx];
+                data.size += sx;
+
+            }
+
+            auto sep = data.data.indexOf("\r\n");
+
+            writeln(data.data[0..sep]);
+            auto responseLine = data.data[0..sep].split(" ");
+            writeln(responseLine);
+            httpVersion = responseLine[0].dup;
+            status = responseLine[1].dup;
+            reason = responseLine[2].dup;
+
+            
+        }
         
-        if(this.headers)
-            return;
-
-        //Read until 
-        //while(true){
-
-        //}
-
+        //return data;
     }
     void close(){}
 
@@ -390,6 +424,7 @@ struct Data{
     long size;
     long i;
     string[string] headers;
+    Headers h1;
     //char[] headers;
     this(long i, char[] data){
         //write(data);
@@ -412,9 +447,9 @@ struct Data{
     }
 
     void getHeaders(){
-
-
-        auto x = 
+        //writeln(data);
+        //parseHeaders(data.dup, h1);
+        /*auto x = 
             data.splitter("\r\n\r\n")
             .array()[0]
             .splitter("\r\n").array();
@@ -434,7 +469,7 @@ struct Data{
 
 
         //splitter!(findSplit(data, "\r\n\r\n")[0]),
-         //   "\r\n");
+         //   "\r\n");*/
     }
 }
 

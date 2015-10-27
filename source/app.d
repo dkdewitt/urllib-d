@@ -24,7 +24,7 @@ void TestConn(){
     c.connect();
     c.request("GET", "/contact/");
     auto t = c.getResponse();
-    t.read();
+    //t.read();
 }
 
 void testConnection(){
