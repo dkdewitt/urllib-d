@@ -292,9 +292,9 @@ public:
             else
                 this._response = response;
             auto data = this._response.read();
-            writeln(data);
+            data.getHeaders();
             foreach(d; data.data){
-                writeln(d);
+                //write(d);
             }
             return response;
         }catch (Exception exc){
@@ -373,7 +373,7 @@ public:
             if(sx > 0){
                 data.data ~= buff[0..sx];
                 data.size += sx;
-                writeln(data);
+                //writeln(data);
                 //return;
             }
             
@@ -389,9 +389,10 @@ struct Data{
     char[] data;
     long size;
     long i;
-
+    string[string] headers;
+    //char[] headers;
     this(long i, char[] data){
-        write(data);
+        //write(data);
         size = i;
         data = data;
     }
@@ -408,6 +409,32 @@ struct Data{
     void popFront()
     {
         ++i;
+    }
+
+    void getHeaders(){
+
+
+        auto x = 
+            data.splitter("\r\n\r\n")
+            .array()[0]
+            .splitter("\r\n").array();
+            writeln(x);
+        auto  requestLine  = x[0];
+        auto yz = x[1..$];
+        //auto t = yz.splitter(":");
+        auto t = array(map!(a=> a.splitter( ": "))(yz));
+        writeln(t);
+
+
+        string[string] hdr;
+        foreach(a; t){
+        //    a[0];
+        }
+        //each!(a=>assocArray(a)(t);
+
+
+        //splitter!(findSplit(data, "\r\n\r\n")[0]),
+         //   "\r\n");
     }
 }
 

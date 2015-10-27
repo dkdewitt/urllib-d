@@ -10,6 +10,7 @@ import std.string;
 import std.range;
 import core.thread;
 import util.connection;
+import util.hashlist;
 import std.format;
 
 import std.exception;
@@ -68,4 +69,6 @@ void parseHeaders(){
 }
 
 void makeHeaders(){}
+
+alias Headers = HashList!(string);
 
