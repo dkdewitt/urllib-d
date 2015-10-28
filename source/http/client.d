@@ -1,163 +1,212 @@
-//module http.client;
-import std.socket;
+module http.client;
+import http.common;
 import std.stdio;
+import std.socket;
+import std.conv;
+import std.array;
+import std.format;
 import std.algorithm;
 import std.uni;
 import std.conv;
 import std.array;
 import std.concurrency;
-import core.thread;
-import std.string;
 import std.range;
-import http.common;
+import std.string;
 import url.parser;
-import std.format;
 
+class BaseHTTPConnection {
 
-class BaseHTTPConnection{
 protected:
-    string sourceAddress;
     string _host;
     ushort _port;
     int timeout;
     Socket sock;
+    string[string] _headers;
+    string sourceAddress;
 
 private:
+    int debugLevel;
     ConnectionState defaultState = ConnectionState.CS_IDLE;
     ConnectionState state;
     ushort defaultPort = 80;
     string defaultHTTPVersion = HTTPVersion.HTTP_1_1;
-    string[string] _headers;
-    HTTPResponse _response;
-    string ACCEPT_ENCODING = "gzip,deflate";
-
-    int debugLevel;
-    string method = "GET";
-    
-    
     string[] _buffer;
-    
+    HTTPResponse _response;
+    string method;
+    URL url;
+
+
     void output(string s){
         _buffer ~= s;
     }
 
-    /**
-    *   Send _buffer and optional message
-    **/
-    void sendBuffer(string message=null){
 
+    //Send output and clear buffer
+    void sendOutput(string messageBody = null){
+        auto buffer = this._buffer;
+        buffer ~= [""];
+        auto message = buffer.join("\r\n");
+        send(message);
+        this._buffer = null;
+
+        if(messageBody){
+            message = ["", messageBody].join("\r\n");
+            send(message);
+        }
     }
 
+    void sendRequest(string method, string url, string requestBody, string[string] headers ){
 
-
-    void _sendRequest(string method, string url, string requestBody, string[string] headers ){
-        string[] headerKeys = headers.keys;
-        writeln("Request");
-        //string request="";
-
-        string request = format("%s %s %s", method, url, "HTTP/1.1");
-
-        output(request);
+        string requestLine = format("%s %s %s", method, url, "HTTP/1.1");
+        output(requestLine);
         string[string] skips;
-        if("host" in headers)
+        if("host" in headers){
             skips["host"] = "1";
-
-        putRequest(method, url, 0,  0);
-        if( !find(headerKeys, "content-length")){
-            //set content length]
-            string contentLength = to!string(_setContentLength(requestBody, method));
-            headers["content-length"] = contentLength;
         }
+        putRequest(method, url, 0,  0);
+        if(!("content-length" in headers))
+            if(requestBody){}
+                //headers["content-length"] = to!string(setContentLength(requestBody, method));
+
 
         foreach(hdr; headers.byPair){
-            writeln(hdr);
-            _putHeader(hdr[0], hdr[1]);
+            putHeader(hdr[0], hdr[1]);
         }
+
+        //Needs Changed
         output("\r\n");
         endHeaders(requestBody);
-
-
     }
 
-    int _setContentLength(string requestBody, string method){
+    int setContentLength(string requestBody, string method){
         ulong length = 0;
-        if(find( METHODS_REQUIRING_BODY,method.toUpper()) ){
+        if(find(METHODS_REQUIRING_BODY, method.toUpper())){
             if(requestBody is null)
                 length = 0;
             length = requestBody.length;
-
         }
-
         return to!int(length);
     }
 
-    void _putHeader(string name, string value){
+    void putHeader(string name, string value){
         if(state != ConnectionState.CS_REQ_STARTED)
             throw new CannotSendHeader("Request has not started");
 
-        string header;
+        string header = name ~ ": " ~ value;
+        output(header);
 
-        header = name ~ " : " ~ value ~"\r\n";
-        string headerByte = header;
-        //ubyte[] headerByte = cast(ubyte[]) header.dup;
-
-        _buffer ~= headerByte;
-
-    }   
-
-    void _outputToBuffer(string s){
-        _buffer ~= s;
     }
 
-
-    void endHeaders(string messageBody=null){
- 
+    void endHeaders(string messageBody = null){
         if(state == ConnectionState.CS_REQ_STARTED)
             state = ConnectionState.CS_REQ_SENT;
         else
             throw new CannotSendHeader("Request has not started");
 
-        _sendOutput(messageBody);
-    }
-    void _sendOutput(string messageBody = null){
-
-        auto buffer = this._buffer;
-        buffer ~= [""];
-        auto message = buffer.join("\r\n");
-        this._buffer = null;
-
-        send(message);
-        if(messageBody){
-            message = ["", messageBody].join("\r\n");
-            
-            send(message);
-        }
+        sendOutput( messageBody);
     }
 
-    void setHostPort(string host, string port=null){
+
+
+    void setHostPort(string host, string port = null){
         if(port is null){
             auto i = host.lastIndexOf(":");
             auto j = host.lastIndexOf("]");
-            if(i > j){
-                try{
-                this._port  = to!ushort(host[i+1..$]);
-                } catch(ConvException exc){
-                    writefln("error message: %s", exc.msg);
-                    writefln("source file  : %s", exc.file);
-                    writefln("source line  : %s", exc.line);
-                    writeln();
-                }
+        
 
-                this._host = host[0..i];
+        if(i>j){
+            try{
+                this._port = to!ushort(host[i+1..$]);
+            } catch(ConvException exc){
+                writefln("error message: %s", exc.msg);
+                writefln("source file  : %s", exc.file);
+                writefln("source line  : %s", exc.line);
             }
-            else
-                this._port = defaultPort;
+
+            this._host = host[0..i];
         }
+        else
+            this._port = defaultPort;
+    }
         else{
             this._port = to!ushort(port);
             this._host = host;
         }
     }
+
+    void send(string data){
+        if(this.sock is null){
+            //if (autoOpen)
+                //connect();
+            throw new NotConnected("Client is currently not connected2");
+        }
+
+        if(debugLevel > 0){
+        }
+        size_t chuckSize = 8192;
+        
+        foreach(chunk; chunks(data, chuckSize)){
+            this.sock.send(to!(char[])(chunk));
+        }
+        //this.sock.send("\r\n");
+
+    }
+
+
+    /**
+    *   Send request to server
+    **/
+    void putRequest(string method, string url, int skiphost=0, int skipAcceptEncoding=0){
+        
+        if(this._response && this._response.isClosed())
+            this._response = null;
+
+        if (this.state == ConnectionState.CS_IDLE)
+            this.state = ConnectionState.CS_REQ_STARTED;
+        else
+            throw new CannotSendRequestException("Test");
+        this.method = method;
+        if(url is null)
+            url = "/";
+
+        string request = format("%s %s %s", method, url , HTTPVersion.HTTP_1_1);
+        //sendOutput();
+        //encode ascii??
+
+        if(this.defaultHTTPVersion == HTTPVersion.HTTP_1_1){
+            if(! skiphost){
+                URL netUrl;
+                if(url.startsWith("http")){
+                    //get URL obj
+                    netUrl = urlSplit(url, "http");
+               }
+               if(netUrl.host){
+                    putHeader("Host", netUrl.host);
+                }
+               else{
+                /*if tunnel hsot
+
+                */
+                auto host = this._host;
+                auto port = this._port;
+
+                auto hostLoc = host.lastIndexOf(":");
+                if(hostLoc >= 0){
+                    //ipv6ify host
+                }
+
+                if(port == defaultPort){
+                    putHeader("Host", host);
+                }
+                else{
+                    putHeader("Host",  host ~ ":" ~ to!string(port)  );
+                }
+               }
+                
+            }
+        }
+    }        
+
 
 
 public:
@@ -166,26 +215,21 @@ public:
         this._host = host;
         this._port = port;
         this.timeout = timeout;
-    }
+        this.url = URL(host);
 
-    //Get Host w/o port
-    @property string host(){
-        string host = _headers.get("host","");
-        auto colonSep = host.lastIndexOf(":");
-        if (colonSep)
-            return host[0..colonSep];
-        else
-            return host;
-    }
-
-    void sendRequest(string method, string url, string requestBody, string[string] headers ){
-        _sendRequest(method,  url,  requestBody,  headers );
+        //switch to setHostPort
     }
 
     void connect(){
         sock = new Socket(AddressFamily.INET, SocketType.STREAM);
-        Address addresses = new InternetAddress("localhost", 5000);
-        sock.connect(addresses);
+
+
+        // TODO change thid
+        this.sock.setOption(SocketOptionLevel.SOCKET,
+        SocketOption.RCVTIMEO, dur!"msecs"(200));
+
+        Address addresses = new InternetAddress(this._host, this._port);
+        this.sock.connect(addresses);
     }
 
     void close(){
@@ -210,119 +254,7 @@ public:
 
 
     void request(string method, string url, string requestBody=null, string[string] headers = null){
-        
-        this._sendRequest(method, url, requestBody, headers);
-    }
-
-    void send(string data){
-        if (this.sock is null){
-            //raise not connected maybe auto open??
-        }
-
-        if(debugLevel>0)
-            writeln("send: " ~ data);
-        size_t blockSize = 8192;
-        writeln("Begin data");
-        writeln(data);
-        writeln("End data");
-        while(1){
-            auto dataBlocks = chunks(data, blockSize);
-
-            writeln("Begin dataBlock");
-        writeln(dataBlocks);
-        writeln("End dataBLoc");
-        //this.sock.send("GET /api/groups/ HTTP/1.1\r\n\r\n");
-                    foreach(chunk; dataBlocks){
-
-                this.sock.send(to!(char[])(chunk));
-                //this.sock.send("\r\n");
-            }
-
-            
-            break;
-            
-        }
-        char[1023] b;
-
-        auto got = this.sock.receive(b);
-        writeln(b[0..got]);
-
-
-        return;
-    }
-
-
-    /**
-    *   Send request to server
-    **/
-    void putRequest(string method, string url, int skiphost=0, int skipAcceptEncoding=0){
-        
-        if(this._response && this._response.isClosed())
-            this._response = null;
-
-        if (this.state == ConnectionState.CS_IDLE)
-            this.state = ConnectionState.CS_REQ_STARTED;
-        else
-            throw new CannotSendRequestException("Test");
-        this.method = method;
-        if(url is null)
-            url = "/";
-
-        string request = format("%s %s %s", method, url , HTTPVersion.HTTP_1_1);
-        _sendOutput();
-        //encode ascii??
-
-        if(this.defaultHTTPVersion == HTTPVersion.HTTP_1_1){
-            if(! skiphost){
-                URL netUrl;
-                if(url.startsWith("http")){
-                    //get URL obj
-                    netUrl = urlSplit(url, "http");
-               }
-               if(netUrl.host){
-                    _putHeader("Host", netUrl.host);
-                }
-               else{
-                /*if tunnel hsot
-
-                */
-
-                auto host = this._host;
-                auto port = this._port;
-
-                auto hostLoc = host.lastIndexOf(":");
-                if(hostLoc >= 0){
-                    //ipv6ify host
-                }
-
-                if(port == defaultPort){
-                    _putHeader("Host", host);
-                }
-                else{
-                    _putHeader("Host",  host ~ ":" ~ to!string(port)  );
-                }
-
-               
-
-               }
-                
-            }
-        }
-    }        
-
-
-    void receive(){
-
-            this.sock.listen(10);
-            char[1024] buffer;
-            // the listener is ready to read
-            // a new client wants to connect we accept it here
-            auto newSocket = sock.accept();
-            auto received = newSocket.receive(buffer);
-               
-            newSocket.close();
-           
-
+        this.sendRequest(method, url, requestBody, headers);
     }
 
     HTTPResponse getResponse(){
@@ -343,7 +275,9 @@ public:
 
         try{
             try{
+                //msleep(100);
                 response.begin();
+
 
             } catch (Exception exc){
                 close();
@@ -353,23 +287,24 @@ public:
 
             if(response.willClose)
                 close();
-            else
+            else{
+
                 this._response = response;
-            this._response.read();
-            return response;
+                this._response.read();
+            }
+            //auto data = this._response.read();
+            //data.getHeaders();
+            //foreach(d; data.data){
+                //write(d);
+            //}
+            return this._response;
         }catch (Exception exc){
             throw new Exception(" ");
         }
 
     }
 
-    unittest{
-        BaseHTTPConnection h1 = new BaseHTTPConnection("localhost", 8085);    
-        h1.connect();
-        assert(h1.sock !is null);
 
-        h1.send("Test Data".dup);
-    }
 }
 
 
@@ -380,6 +315,16 @@ private:
     int debugLevel;
     string method;
     string url;
+    Data data;
+    Headers headers;
+    string httpVersion;
+    string status;
+    string reason;
+    int contentLength;
+    string message;
+    void readStatus(){
+
+    }
 
 public:
 
@@ -387,13 +332,69 @@ public:
         this.socket = sock;
         this.debugLevel = debugLevel;
         this.method = method;
-        this.socket.blocking = 1;
+        //this.socket.blocking = 1;
+
      
     }
 
-
     void begin(){
+        char[8192] buff;
+        Data d;
+        while(true){
+        
+            auto sx = this.socket.receive(buff);
 
+            if(sx == -1){
+                //break;
+                //this.socket.close();
+                //return data;
+                break;
+            }
+
+            if(sx > 0){
+                d.data ~= buff[0..sx];
+                d.size += sx;
+            }
+            
+
+        }
+        this.data = d;
+
+        while(true){
+            auto sep = data.data.indexOf("\r\n");
+            auto responseLine = data.data[0..sep].split(" ");
+        
+            this.httpVersion = responseLine[0].dup;
+            this.status = responseLine[1].dup;
+            this.reason = responseLine[2].dup;
+
+            if (this.status != "100")
+                break;    
+            }
+            
+            auto rawTmp = this.data.data.split("\r\n\r\n"); 
+            auto rawHeaders = rawTmp[0];
+            if(rawTmp.length > 1){
+                writeln(rawTmp[1]);
+            }
+            parseHeaders(rawHeaders.dup, headers);
+            
+            auto c = headers.get("content-length", null);
+            if(c){
+                this.contentLength = to!int(c);
+            }
+            writeln(this.contentLength);
+            auto transferEncoding = headers.get("transfer-encoding",null);
+            if(transferEncoding){
+
+            /*self.chunked = True
+            self.chunk_left = None
+
+            self.chunked = False
+    */
+            }
+
+        //return data;
     }
     void close(){}
 
@@ -404,37 +405,62 @@ public:
         return false;
     }
 
-    void read(){
+    Data read(){
         char[8192] buff;
-        //writeln(this.socket.receive(buff));
-        //writeln("Received", buff[0..this.socket.receive(buff)]);       
+
+        Data data;
+
+
+        while(true){
+            
+            auto sx = this.socket.receive(buff);
+            if(sx == -1){
+                //break;
+                //this.socket.close();
+                //return data;
+                break;
+            }
+
+            if(sx > 0){
+                data.data ~= buff[0..sx];
+                data.size += sx;
+                //return;
+            }
+            
+        }
+        return data;
     }
 }
 
 
 
+struct Data{
+    char[] data;
+    long size;
+    long i;
+    string[string] headers;
+    Headers h1;
 
+    this(long i, char[] data){
 
+        size = i;
+        data = data;
+    }
+    @property bool empty()
+    {
+        return i == size;
+    }
 
+    @property char front()
+    {
+        return data[i];
+    }
 
+    void popFront()
+    {
+        ++i;
+    }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+}
 
 

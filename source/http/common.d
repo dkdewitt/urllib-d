@@ -74,6 +74,8 @@ enum HTTPMethod {
     CONNECT,
 }
 
+enum maxHeaderLength = 4096;
+
 HTTPMethod httpMethodFromString(string str)
 {
     switch(str){
@@ -100,12 +102,10 @@ void parseHeaders(string input, ref Headers requestHeaders){
             }
            
             auto sepPosition = line.indexOf(":");
-            //enforce(sepPosition > 0 && sepPosition < line.length-1, "Invalid Header");
-            
 
-            //requestHeaders.insert([line[0..sepPosition]], line[sepPosition+1..$]);
+            requestHeaders.insert(line[0..sepPosition], line[sepPosition+2..$]);
         }
-        writeln(requestHeaders);
+        
 
 }
 

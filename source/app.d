@@ -22,8 +22,10 @@ void URLTest(){
 void TestConn(){
     HTTPConnection c = new HTTPConnection("www.pylync.com",80);
     c.connect();
-    c.request("GET", "/contact/");
+    c.request("POST", "/contact/");
     auto t = c.getResponse();
+
+    //writeln(t.status);
     //t.read();
 }
 

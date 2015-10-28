@@ -15,6 +15,7 @@ struct HashList(Value){
 
 
     void insert(string key, Value value){
+
         keyOrder ~= key;
         kv[key] = value;
     }
@@ -27,4 +28,8 @@ struct HashList(Value){
         return kv[key];
     }
 
+    Value get(string key, lazy Value defVal){
+        return  kv.get(key, defVal);
+        
+    }
 }
