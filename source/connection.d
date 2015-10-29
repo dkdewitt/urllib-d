@@ -15,6 +15,7 @@ class HTTPConnection: BaseHTTPConnection{
 
 private:
     //default_socket_options = [(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)]
+    
     int defaulPort = 80;
     
     string socketOptions;
@@ -53,54 +54,42 @@ private:
     //}
 
 public:
-
+    //Headers headers;
+    mixin RequestMethods!("");
     this(string host, ushort port=0, int timeout=0, string sourceAddress=null, string[string] headers = null){
         super(host, port, timeout, sourceAddress);
         //this.sourceAddress = sourceAddress;
             auto conn = newConnection();
-        prepareConnection(conn);
+            prepareConnection(conn);
+            //writeln(y);
+            request("GET", "/");
     }
 }
 
 
 
-struct RequestMethods{
+mixin template RequestMethods(string headers)
+{
+    import std.stdio;
+    import std.uni : toUpper;
+    import std.algorithm: canFind;
+    string headers;
 
-private: 
-    string[string] headers;
-    
-
-
-public:
-    this(string[string] headers = null){
-        this.headers = headers;
-    }
-
-    void request(string method, string[string] fields=null, string[string] headers=null){
-        import std.algorithm: find;
-        import std.string : toUpper;
-
-        if(find(ENCODE_URL_METHODS, method.toUpper())){
-
-        }
-    }
-
-    void encodeRequestURL(string method, string url, string fields = null, string[string] headers = null){
-
+    void encodeUrl(string method, string url, string[string] fields = null, string headers = null){
         if(!headers){
             headers = this.headers;
         }
-        //string[string[string]] extraKeywords = ["headers" : headers];
-
-        if(fields){
-            //url ~= "?" urlencode(fields);
-        }
-
-        //return urlOpen(method, url, extraKeywords);
     }
 
-    //void encodeRequestURL()
+    void request(string method, string url, string[string] fields = null, string headers = null){
+        method = method.toUpper();
+
+        writeln(method);
+
+        if( ENCODE_URL_METHODS.canFind(method)){
+            writeln(method);
+        }
+    }
+    
+
 }
-
-
-

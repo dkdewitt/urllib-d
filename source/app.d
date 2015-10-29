@@ -9,10 +9,15 @@ void main()
 {
 	//URLTest();
     //testConnection();
-    TestConn();
-
+    //TestConn();
+    ConnectionTest();
 }
 
+
+void ConnectionTest(){
+    HTTPConnection conn = new HTTPConnection("www.pylync.com", 80, 0);
+    //writeln(conn.y);
+}
 
 void URLTest(){
     auto u = URL("https://www.google.com/index.html?x=5&y=6#test.html");
@@ -20,10 +25,14 @@ void URLTest(){
 }
 
 void TestConn(){
-    HTTPConnection c = new HTTPConnection("www.pylync.com",80);
+    HTTPConnection c = new HTTPConnection("www.pylync.com", 80);
     c.connect();
-    c.request("POST", "/contact/");
+    string requestBody = "username=David";
+    string[string] hdrs = ["Content-Type": "application/x-www-form-urlencoded"];
+    //c.request("POST", "/login", requestBody, hdrs);
+    c.request("GET", "/");
     auto t = c.getResponse();
+    writeln(t.data);
 
     //writeln(t.status);
     //t.read();

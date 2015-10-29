@@ -44,13 +44,13 @@ private:
     //Send output and clear buffer
     void sendOutput(string messageBody = null){
         auto buffer = this._buffer;
-        buffer ~= [""];
+        buffer ~= ["",""];
         auto message = buffer.join("\r\n");
         send(message);
         this._buffer = null;
 
         if(messageBody){
-            message = ["", messageBody].join("\r\n");
+            message = ["", messageBody].join("");
             send(message);
         }
     }
@@ -64,17 +64,16 @@ private:
             skips["host"] = "1";
         }
         putRequest(method, url, 0,  0);
-        if(!("content-length" in headers))
-            if(requestBody){}
-                //headers["content-length"] = to!string(setContentLength(requestBody, method));
-
-
+        if(!("Content-Length" in headers)){
+            if(requestBody){
+                headers["Content-Length"] = to!string(setContentLength(requestBody, method));
+            }
+        }
         foreach(hdr; headers.byPair){
             putHeader(hdr[0], hdr[1]);
         }
 
-        //Needs Changed
-        output("\r\n");
+
         endHeaders(requestBody);
     }
 
@@ -144,11 +143,15 @@ private:
         if(debugLevel > 0){
         }
         size_t chuckSize = 8192;
-        
+        //writeln("Request Data");
+        write(data);
+        //writeln("End Request Data");
         foreach(chunk; chunks(data, chuckSize)){
+            
             this.sock.send(to!(char[])(chunk));
         }
         //this.sock.send("\r\n");
+        //writeln("END");
 
     }
 
@@ -226,7 +229,7 @@ public:
 
         // TODO change thid
         this.sock.setOption(SocketOptionLevel.SOCKET,
-        SocketOption.RCVTIMEO, dur!"msecs"(200));
+        SocketOption.RCVTIMEO, dur!"msecs"(400));
 
         Address addresses = new InternetAddress(this._host, this._port);
         this.sock.connect(addresses);
@@ -276,8 +279,9 @@ public:
         try{
             try{
                 //msleep(100);
+                writeln("TESTING");
                 response.begin();
-
+                writeln("ENDING");
 
             } catch (Exception exc){
                 close();
@@ -290,7 +294,7 @@ public:
             else{
 
                 this._response = response;
-                this._response.read();
+                //this._response.read();
             }
             //auto data = this._response.read();
             //data.getHeaders();
@@ -315,25 +319,24 @@ private:
     int debugLevel;
     string method;
     string url;
-    Data data;
+
+    void readStatus(){
+
+    }
+
+public:
+        Data data;
     Headers headers;
     string httpVersion;
     string status;
     string reason;
     int contentLength;
     string message;
-    void readStatus(){
-
-    }
-
-public:
 
     this(Socket sock, string method,int debugLevel=0){
         this.socket = sock;
         this.debugLevel = debugLevel;
         this.method = method;
-        //this.socket.blocking = 1;
-
      
     }
 
@@ -341,13 +344,12 @@ public:
         char[8192] buff;
         Data d;
         while(true){
-        
+            
             auto sx = this.socket.receive(buff);
+            
 
-            if(sx == -1){
-                //break;
-                //this.socket.close();
-                //return data;
+            //TODO check this
+            if(sx == -1 || sx == 0){
                 break;
             }
 
@@ -360,37 +362,38 @@ public:
         }
         this.data = d;
 
-        while(true){
+        while(true){ //writeln(this.data);
             auto sep = data.data.indexOf("\r\n");
             auto responseLine = data.data[0..sep].split(" ");
-        
+            writeln(responseLine);
             this.httpVersion = responseLine[0].dup;
             this.status = responseLine[1].dup;
             this.reason = responseLine[2].dup;
 
-            if (this.status != "100")
+            if (this.status != "100"){
                 break;    
             }
+        }
             
-            auto rawTmp = this.data.data.split("\r\n\r\n"); 
-            auto rawHeaders = rawTmp[0];
-            if(rawTmp.length > 1){
-                writeln(rawTmp[1]);
-            }
-            parseHeaders(rawHeaders.dup, headers);
-            
-            auto c = headers.get("content-length", null);
-            if(c){
-                this.contentLength = to!int(c);
-            }
-            writeln(this.contentLength);
-            auto transferEncoding = headers.get("transfer-encoding",null);
-            if(transferEncoding){
+        auto rawTmp = this.data.data.split("\r\n\r\n"); 
+        auto rawHeaders = rawTmp[0];
+        if(rawTmp.length > 1){
+            writeln(rawTmp[1]);
+        }
+        parseHeaders(rawHeaders.dup, headers);
+        
+        auto c = headers.get("Content-Length", null);
+        if(c){
+            this.contentLength = to!int(c);
+        }
+        //writeln(this.contentLength);
+        auto transferEncoding = headers.get("transfer-encoding",null);
+        if(transferEncoding){
 
-            /*self.chunked = True
-            self.chunk_left = None
+        /*self.chunked = True
+        self.chunk_left = None
 
-            self.chunked = False
+        self.chunked = False
     */
             }
 
