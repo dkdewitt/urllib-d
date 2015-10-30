@@ -8,7 +8,7 @@ import http.common;
 import std.stdio;   
 import url.parser;
 
-
+alias baseRequest = BaseHTTPConnection.request;
 class HTTPConnection : BaseHTTPConnection{
 
 private:
@@ -61,6 +61,12 @@ public:
            
     }
 
+    void send(string method, string url, string requestBody=null, string[string] headers=null, bool redirect=true){
+        request( method,  url,  requestBody=null, headers = null);
+        auto t = super.getResponse();
+        writeln(t.status);
+    }
+
 
 }
 
@@ -79,11 +85,10 @@ mixin template RequestMethods(string headers)
         }
     }
 
-    void request(string method, string url, string[string] fields = null, string headers = null){
+    HTTPResponse request(string method, string url, string[string] fields = null, string headers = null){
         method = method.toUpper();
 
-        //writeln(method);
-
+        
         if( ENCODE_URL_METHODS.canFind(method)){
             //writeln(method);
         }

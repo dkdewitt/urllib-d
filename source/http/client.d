@@ -3,13 +3,7 @@ import http.common;
 import std.stdio;
 import std.socket;
 import std.conv;
-import std.array;
-import std.format;
 import std.algorithm;
-import std.uni;
-import std.conv;
-import std.array;
-import std.concurrency;
 import std.range;
 import std.string;
 import url.parser;
@@ -72,8 +66,6 @@ private:
         foreach(hdr; headers.byPair){
             putHeader(hdr[0], hdr[1]);
         }
-
-
         endHeaders(requestBody);
     }
 
@@ -106,8 +98,8 @@ private:
     }
 
 
-    void setHostPort(string host, string port = null){
-        if(port is null){
+    void setHostPort(string host, ushort port = 0){
+        if(port == 0){
             auto i = host.lastIndexOf(":");
             auto j = host.lastIndexOf("]");
         
@@ -127,7 +119,7 @@ private:
             this._port = defaultPort;
     }
         else{
-            this._port = to!ushort(port);
+            this._port = port;
             this._host = host;
         }
     }
@@ -142,15 +134,9 @@ private:
         if(debugLevel > 0){
         }
         size_t chuckSize = 8192;
-        //writeln("Request Data");
-        //write(data);
-        //writeln("End Request Data");
         foreach(chunk; chunks(data, chuckSize)){
-            
             this.sock.send(to!(char[])(chunk));
         }
-        //this.sock.send("\r\n");
-        //writeln("END");
 
     }
 
@@ -172,8 +158,6 @@ private:
             url = "/";
 
         string request = format("%s %s %s", method, url , HTTPVersion.HTTP_1_1);
-        //sendOutput();
-        //encode ascii??
 
         if(this.defaultHTTPVersion == HTTPVersion.HTTP_1_1){
             if(! skiphost){
@@ -214,17 +198,14 @@ private:
 public:
 
     this(string host, ushort port, int timeout=0, string sourceAddress=null){
-        this._host = host;
-        this._port = port;
+        setHostPort(host, port);
         this.timeout = timeout;
         this.url = URL(host);
 
-        //switch to setHostPort
     }
 
     void connect(){
         sock = new Socket(AddressFamily.INET, SocketType.STREAM);
-
 
         // TODO change thid
         this.sock.setOption(SocketOptionLevel.SOCKET,
@@ -278,7 +259,7 @@ public:
         try{
             try{
                 //msleep(100);
-
+                response.begin();
 
             } catch (Exception exc){
                 close();
@@ -338,7 +319,7 @@ public:
             
             auto sx = this.socket.receive(buff);
             
-
+            //writeln(sx);
             //TODO check this
             if(sx == -1 || sx == 0){
                 break;
@@ -369,8 +350,9 @@ public:
         auto rawTmp = this.data.data.split("\r\n\r\n"); 
         auto rawHeaders = rawTmp[0];
         if(rawTmp.length > 1){
-            writeln(rawTmp[1]);
+            //writeln(rawTmp[1]);
         }
+ 
         parseHeaders(rawHeaders.dup, headers);
         
         auto c = headers.get("Content-Length", null);
@@ -383,7 +365,7 @@ public:
 
 
             }
-
+ 
         //return data;
     }
     void close(){}
@@ -414,10 +396,11 @@ public:
             if(sx > 0){
                 data.data ~= buff[0..sx];
                 data.size += sx;
+
                 //return;
             }
             
-        }
+        }writeln(data);
         return data;
     }
 }

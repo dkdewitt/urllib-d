@@ -18,8 +18,6 @@ struct URL{
     string fragment;
 
 
-    
-
     this(string url , bool allowFragments=true){
         enforce(url.length > 0);
 

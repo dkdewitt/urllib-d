@@ -94,7 +94,7 @@ HTTPMethod httpMethodFromString(string str)
 
 void parseHeaders(string input, ref Headers requestHeaders){
         auto y = splitter(input, "\r\n");
-        writeln(y);
+        
         string [] requestLine = y.takeOne()[0].split(" ");
         foreach (lineNum, line; y.dropOne().enumerate(1)){
             if(line.length<1){
