@@ -20,52 +20,6 @@ struct URL{
 
     
 
-    /*this(string url, bool allowFragments=true){
-        enforce(url.length > 0);
-        string urlTmp = url;
-
-        if(urlTmp.indexOf("://")!= -1){
-            this.scheme = url[0..url.indexOf("://")];
-            urlTmp = urlTmp[url.indexOf("//")+2 .. $];
-            writeln(urlTmp);
-        }
-        else{
-            this.scheme = "";
-        }
-
-           writeln(this.scheme);
-           auto loc = urlTmp.indexOf("/");
-           if(loc < 0){
-            this.path = urlTmp;
-            auto seperator = urlTmp.indexOf(":");
-            if(seperator > 0){
-                this.port = to!ushort(urlTmp[seperator+1..$]);
-                this.path = urlTmp[0..seperator];
-            }
-        }
-            
-            //Check for fragments
-            if(allowFragments){
-                auto lst = splitter(urlTmp,"#").array;
-                writeln(lst);
-                urlTmp = lst[0];
-                if(lst.length > 1)
-                    this.fragment = lst[1];
-            }
-
-            auto seperator = urlTmp.indexOf(":");
-            if(seperator > 0){
-                writeln(urlTmp);
-                this.port = to!ushort(urlTmp[seperator+1..$]);
-                this.path = urlTmp[0..seperator];
-            }
-
-
-
-            return;
-           
-        }*/
-
     this(string url , bool allowFragments=true){
         enforce(url.length > 0);
 
@@ -96,10 +50,10 @@ struct URL{
                     else
                         hostTmp = urlTmp[0..hostEnd];
                     //Check if credentials are passed in
-                    writeln(urlTmp);
+                    
                     auto userpassLoc = hostTmp.indexOf("@");
                     hostBeg = userpassLoc+1;
-                    writeln(hostBeg);
+                    
                     if(userpassLoc > 0){
                         //Seperate Out for user and pass
 

@@ -23,8 +23,9 @@ Socket createConnection(Address address, int timeout=0, string sourceAddress=nul
     Socket sock;
     try{
         sock = new Socket(res.family, res.type, res.protocol);
-        if(sourceAddress)
+        if(sourceAddress){
             sock.bind(parseAddress(sourceAddress));
+        }
 
     }
     catch{}

@@ -1,9 +1,8 @@
 {
-	"name": "urllib3",
-	"description": "A minimal D application.",
+	"name": "urllib-d",
+	"description": "A D http library.",
 	"copyright": "Copyright © 2015, daviddewitt",
 	"authors": ["daviddewitt"],
 	"dependencies": {
-	},
-    "libs": ["curl"]
+	}
 }

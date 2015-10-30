@@ -106,7 +106,6 @@ private:
     }
 
 
-
     void setHostPort(string host, string port = null){
         if(port is null){
             auto i = host.lastIndexOf(":");
@@ -144,7 +143,7 @@ private:
         }
         size_t chuckSize = 8192;
         //writeln("Request Data");
-        write(data);
+        //write(data);
         //writeln("End Request Data");
         foreach(chunk; chunks(data, chuckSize)){
             
@@ -279,9 +278,7 @@ public:
         try{
             try{
                 //msleep(100);
-                writeln("TESTING");
-                response.begin();
-                writeln("ENDING");
+
 
             } catch (Exception exc){
                 close();
@@ -292,15 +289,9 @@ public:
             if(response.willClose)
                 close();
             else{
-
                 this._response = response;
-                //this._response.read();
             }
-            //auto data = this._response.read();
-            //data.getHeaders();
-            //foreach(d; data.data){
-                //write(d);
-            //}
+
             return this._response;
         }catch (Exception exc){
             throw new Exception(" ");
@@ -325,7 +316,7 @@ private:
     }
 
 public:
-        Data data;
+    Data data;
     Headers headers;
     string httpVersion;
     string status;
@@ -365,7 +356,7 @@ public:
         while(true){ //writeln(this.data);
             auto sep = data.data.indexOf("\r\n");
             auto responseLine = data.data[0..sep].split(" ");
-            writeln(responseLine);
+            //writeln(responseLine);
             this.httpVersion = responseLine[0].dup;
             this.status = responseLine[1].dup;
             this.reason = responseLine[2].dup;
@@ -390,11 +381,7 @@ public:
         auto transferEncoding = headers.get("transfer-encoding",null);
         if(transferEncoding){
 
-        /*self.chunked = True
-        self.chunk_left = None
 
-        self.chunked = False
-    */
             }
 
         //return data;
@@ -437,33 +424,5 @@ public:
 
 
 
-struct Data{
-    char[] data;
-    long size;
-    long i;
-    string[string] headers;
-    Headers h1;
-
-    this(long i, char[] data){
-
-        size = i;
-        data = data;
-    }
-    @property bool empty()
-    {
-        return i == size;
-    }
-
-    @property char front()
-    {
-        return data[i];
-    }
-
-    void popFront()
-    {
-        ++i;
-    }
-
-}
 
 

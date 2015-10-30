@@ -113,3 +113,34 @@ void makeHeaders(){}
 
 alias Headers = HashList!(string);
 
+
+
+struct Data{
+    char[] data;
+    long size;
+    long i;
+    string[string] headers;
+    Headers h1;
+
+    this(long i, char[] data){
+
+        size = i;
+        data = data;
+    }
+    @property bool empty()
+    {
+        return i == size;
+    }
+
+    @property char front()
+    {
+        return data[i];
+    }
+
+    void popFront()
+    {
+        ++i;
+    }
+
+}
+

@@ -6,17 +6,15 @@ import util.connection;
 import http.client;
 import http.common;
 import std.stdio;   
-//alias _HTTPConnection = HTTPConnection;
+import url.parser;
 
 
-
-
-class HTTPConnection: BaseHTTPConnection{
+class HTTPConnection : BaseHTTPConnection{
 
 private:
     //default_socket_options = [(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)]
     
-    int defaulPort = 80;
+    ushort defaulPort = 80;
     
     string socketOptions;
 
@@ -48,22 +46,22 @@ private:
         //Add tunnel crap
     }
 
-    //void connect(){
-    //    auto conn = newConnection();
-    //    prepareConnection(conn);
-    //}
+
 
 public:
     //Headers headers;
-    mixin RequestMethods!("");
+    
     this(string host, ushort port=0, int timeout=0, string sourceAddress=null, string[string] headers = null){
-        super(host, port, timeout, sourceAddress);
-        //this.sourceAddress = sourceAddress;
-            auto conn = newConnection();
-            prepareConnection(conn);
-            //writeln(y);
-            request("GET", "/");
+        if(!port){
+            port = defaulPort;
+        }
+        auto url = URL(host);
+        super(url.host, port, timeout, sourceAddress);
+        //connect();
+           
     }
+
+
 }
 
 
@@ -84,10 +82,10 @@ mixin template RequestMethods(string headers)
     void request(string method, string url, string[string] fields = null, string headers = null){
         method = method.toUpper();
 
-        writeln(method);
+        //writeln(method);
 
         if( ENCODE_URL_METHODS.canFind(method)){
-            writeln(method);
+            //writeln(method);
         }
     }
     
